@@ -40,10 +40,18 @@ $I->dontSeeFileFound($file2);
 $I->dontSeeFileFound($file3);
 $I->dontSeeFileFound($file4);
 
-$I->runShellCommand('phalcon model --config=app/mysql/config.php --name=testModel --output=app/models/model_test --annotate');
-$I->runShellCommand('phalcon model --config=app/mysql/config.php --name=test-model2 --output=app/models/model_test --annotate');
-$I->runShellCommand('phalcon model --config=app/mysql/config.php --name=test_model3 --output=app/models/model_test --annotate');
-$I->runShellCommand('phalcon model --config=app/mysql/config.php --name=Testmodel4 --output=app/models/model_test --annotate');
+$I->runShellCommand(
+    'phalcon model --config=app/mysql/config.php --name=testModel --output=app/models/model_test --annotate'
+);
+$I->runShellCommand(
+    'phalcon model --config=app/mysql/config.php --name=test-model2 --output=app/models/model_test --annotate'
+);
+$I->runShellCommand(
+    'phalcon model --config=app/mysql/config.php --name=test_model3 --output=app/models/model_test --annotate'
+);
+$I->runShellCommand(
+    'phalcon model --config=app/mysql/config.php --name=Testmodel4 --output=app/models/model_test --annotate'
+);
 
 $I->seeFileFound($file1);
 $I->seeFileFound($file2);
