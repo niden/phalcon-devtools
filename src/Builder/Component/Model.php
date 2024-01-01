@@ -1,7 +1,5 @@
 <?php
 
-declare(strict_types=1);
-
 /**
  * This file is part of the Phalcon Developer Tools.
  *
@@ -11,8 +9,11 @@ declare(strict_types=1);
  * the LICENSE file that was distributed with this source code.
  */
 
+declare(strict_types=1);
+
 namespace Phalcon\DevTools\Builder\Component;
 
+use Exception;
 use Phalcon\Db\Adapter\Pdo\AbstractPdo;
 use Phalcon\Db\Column;
 use Phalcon\Db\ReferenceInterface;
@@ -24,12 +25,33 @@ use Phalcon\DevTools\Exception\WriteFileException;
 use Phalcon\DevTools\Generator\Snippet;
 use Phalcon\DevTools\Options\OptionsAware as ModelOption;
 use Phalcon\DevTools\Utils;
-use Phalcon\Text;
-use Phalcon\Validation;
-use Phalcon\Validation\Validator\Email as EmailValidator;
+use Phalcon\Filter\Validation;
+use Phalcon\Filter\Validation\Validator\Email as EmailValidator;
 use ReflectionClass;
 use ReflectionClassConstant;
 use ReflectionProperty;
+
+use function array_key_exists;
+use function array_slice;
+use function explode;
+use function file;
+use function file_exists;
+use function file_get_contents;
+use function file_put_contents;
+use function is_object;
+use function is_writable;
+use function join;
+use function method_exists;
+use function preg_match;
+use function rtrim;
+use function sprintf;
+use function strlen;
+use function strtolower;
+use function trim;
+use function usort;
+
+use const DIRECTORY_SEPARATOR;
+use const PHP_EOL;
 
 /**
  * Builder to generate models
@@ -37,26 +59,26 @@ use ReflectionProperty;
 class Model extends AbstractComponent
 {
     /**
+     * Options container
+     *
+     * @var ModelOption
+     */
+    protected ModelOption $modelOptions;
+    /**
      * Map of scalar data objects
      *
      * @var array
      */
-    private $typeMap = [
+    private array $typeMap = [
         //'Date' => 'Date',
         //'Decimal' => 'Decimal'
     ];
 
     /**
-     * Options container
-     *
-     * @var ModelOption
-     */
-    protected $modelOptions;
-
-    /**
      * Create Builder object
      *
      * @param array $options
+     *
      * @throws InvalidArgumentException
      */
     public function __construct(array $options)
@@ -94,7 +116,7 @@ class Model extends AbstractComponent
      */
     public function build(): void
     {
-        $config = $this->modelOptions->getOption('config');
+        $config  = $this->modelOptions->getOption('config');
         $snippet = $this->modelOptions->getOption('snippet');
 
         if ($this->modelOptions->hasOption('directory')) {
@@ -115,13 +137,13 @@ class Model extends AbstractComponent
         }
 
         $namespace = $this->modelOptions->hasOption('namespace')
-            ? (string) $this->modelOptions->getOption('namespace') : '';
+            ? (string)$this->modelOptions->getOption('namespace') : '';
 
         if ($this->checkNamespace($namespace) && !empty(trim($namespace))) {
             $namespace = 'namespace ' . $this->modelOptions->getOption('namespace') . ';' . PHP_EOL . PHP_EOL;
         }
 
-        $genDocMethods = $this->modelOptions->getValidOptionOrDefault('genDocMethods', false);
+        $genDocMethods     = $this->modelOptions->getValidOptionOrDefault('genDocMethods', false);
         $useSettersGetters = $this->modelOptions->getValidOptionOrDefault('genSettersGetters', false);
 
         $adapter = $config->database->adapter ?? 'Mysql';
@@ -161,7 +183,7 @@ class Model extends AbstractComponent
             throw new InvalidArgumentException(sprintf('Table "%s" does not exist.', $table));
         }
 
-        $fields = $db->describeColumns($table, $schema);
+        $fields        = $db->describeColumns($table, $schema);
         $referenceList = $this->getReferenceList($schema, $db);
 
         foreach ($referenceList as $tableName => $references) {
@@ -173,8 +195,8 @@ class Model extends AbstractComponent
                 $entityNamespace = $this->modelOptions->hasOption('namespace')
                     ? $this->modelOptions->getOption('namespace') . "\\" : '';
 
-                $refColumns = $reference->getReferencedColumns();
-                $columns = $reference->getColumns();
+                $refColumns   = $reference->getReferencedColumns();
+                $columns      = $reference->getColumns();
                 $initialize[] = $snippet->getRelation(
                     'hasMany',
                     $this->getFieldName($refColumns[0]),
@@ -189,8 +211,8 @@ class Model extends AbstractComponent
             $entityNamespace = $this->modelOptions->hasOption('namespace')
                 ? $this->modelOptions->getOption('namespace') : '';
 
-            $refColumns = $reference->getReferencedColumns();
-            $columns = $reference->getColumns();
+            $refColumns   = $reference->getReferencedColumns();
+            $columns      = $reference->getColumns();
             $initialize[] = $snippet->getRelation(
                 'belongsTo',
                 $this->getFieldName($columns[0]),
@@ -212,7 +234,7 @@ class Model extends AbstractComponent
                 $possibleMethods = [];
                 if ($useSettersGetters) {
                     foreach ($fields as $field) {
-                        /** @var \Phalcon\Db\Column $field */
+                        /** @var Column $field */
                         $methodName = Text::camelize($field->getName(), '_-');
 
                         $possibleMethods['set' . $methodName] = true;
@@ -223,7 +245,7 @@ class Model extends AbstractComponent
                 /** @noinspection PhpIncludeInspection */
                 require_once $modelPath;
 
-                $linesCode = file($modelPath);
+                $linesCode     = file($modelPath);
                 $fullClassName = $this->modelOptions->getOption('className');
                 if ($this->modelOptions->hasOption('namespace')) {
                     $fullClassName = $this->modelOptions->getOption('namespace') . '\\' . $fullClassName;
@@ -248,7 +270,7 @@ class Model extends AbstractComponent
                         }
                     }
 
-                    $methodDeclaration = join(
+                    $methodDeclaration = implode(
                         '',
                         array_slice(
                             $linesCode,
@@ -280,7 +302,7 @@ class Model extends AbstractComponent
 
                 $possibleFieldsTransformed = [];
                 foreach ($fields as $field) {
-                    $fieldName = $this->getFieldName($field->getName());
+                    $fieldName                             = $this->getFieldName($field->getName());
                     $possibleFieldsTransformed[$fieldName] = true;
                 }
 
@@ -291,7 +313,7 @@ class Model extends AbstractComponent
                         }
 
                         $constantsPreg = '/const(\s+)' . $constant->getName() . '([\s=;]+)/';
-                        $attribute = $this->getAttribute($linesCode, $constantsPreg, $constant);
+                        $attribute     = $this->getAttribute($linesCode, $constantsPreg, $constant);
                         if (!empty($attribute)) {
                             $attributes[] = $attribute;
                         }
@@ -330,12 +352,12 @@ class Model extends AbstractComponent
                     }
 
                     $modifiersPreg = '/' . $modifiersPreg . '\$' . $propertyName . '([\s=;]+)/';
-                    $attribute = $this->getAttribute($linesCode, $modifiersPreg, $property);
+                    $attribute     = $this->getAttribute($linesCode, $modifiersPreg, $property);
                     if (!empty($attribute)) {
                         $attributes[] = $attribute;
                     }
                 }
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 throw new RuntimeException(
                     sprintf(
                         'Failed to create the model "%s". Error: %s',
@@ -358,14 +380,14 @@ class Model extends AbstractComponent
                     }
                 }
                 if (count($domain)) {
-                    $varItems = join(', ', $domain);
+                    $varItems      = implode(', ', $domain);
                     $validations[] = $snippet->getValidateInclusion($fieldName, $varItems);
                 }
             }
 
             if ($field->getName() === 'email') {
                 $validations[] = $snippet->getValidateEmail($fieldName);
-                $uses[] = $snippet->getUseAs(EmailValidator::class, 'EmailValidator');
+                $uses[]        = $snippet->getUseAs(EmailValidator::class, 'EmailValidator');
             }
         }
 
@@ -394,8 +416,8 @@ class Model extends AbstractComponent
                 continue;
             }
 
-            $type = $this->getPHPType($field->getType());
-            $fieldName = $this->getFieldName($field->getName());
+            $type         = $this->getPHPType($field->getType());
+            $fieldName    = $this->getFieldName($field->getName());
             $attributes[] = $snippet->getAttributes(
                 $type,
                 $useSettersGetters ? 'protected' : 'public',
@@ -406,7 +428,7 @@ class Model extends AbstractComponent
 
             if ($useSettersGetters) {
                 $methodName = Utils::camelize($field->getName(), '_-');
-                $setters[] = $snippet->getSetter($field->getName(), $fieldName, $type, $methodName);
+                $setters[]  = $snippet->getSetter($field->getName(), $fieldName, $type, $methodName);
 
                 if (isset($this->typeMap[$type])) {
                     $getters[] = $snippet->getGetterMap($fieldName, $type, $methodName, $this->typeMap[$type]);
@@ -419,7 +441,7 @@ class Model extends AbstractComponent
         $validationsCode = '';
         if (!$alreadyValidations && count($validations) > 0) {
             $validationsCode = $snippet->getValidationsMethod($validations);
-            $uses[] = $snippet->getUse(Validation::class);
+            $uses[]          = $snippet->getUse(Validation::class);
         }
 
         $initCode = '';
@@ -440,10 +462,10 @@ class Model extends AbstractComponent
             $methodRawCode[] = $snippet->getModelFindFirst($this->modelOptions->getOption('className'));
         }
 
-        $content = join('', $attributes);
+        $content = implode('', $attributes);
 
         if ($useSettersGetters) {
-            $content .= join('', $setters) . join('', $getters);
+            $content .= implode('', $setters) . implode('', $getters);
         }
 
         $content .= $validationsCode . $initCode;
@@ -470,7 +492,7 @@ class Model extends AbstractComponent
                 return strlen($a) - strlen($b);
             });
 
-            $useDefinition = join("\n", $uses) . PHP_EOL . PHP_EOL;
+            $useDefinition = implode("\n", $uses) . PHP_EOL . PHP_EOL;
         }
 
         $abstract = ($this->modelOptions->getOption('abstract') ? 'abstract ' : '');
@@ -478,11 +500,11 @@ class Model extends AbstractComponent
         $code = $snippet->getClass(
             $namespace,
             $useDefinition,
+            $this->modelOptions,
+            $content,
             $classDoc,
             $abstract,
-            $this->modelOptions,
             $extends,
-            $content,
             $license
         );
 
@@ -502,8 +524,25 @@ class Model extends AbstractComponent
     }
 
     /**
-     * @param array $linesCode
-     * @param string $pattern
+     * @throw InvalidParameterException
+     */
+    protected function checkDataBaseParam(): void
+    {
+        if (!isset($this->modelOptions->getOption('config')->database)) {
+            throw new InvalidParameterException('Database configuration cannot be loaded from your config file.');
+        }
+
+        if (!isset($this->modelOptions->getOption('config')->database->adapter)) {
+            throw new InvalidParameterException(
+                "Adapter was not found in the config. " .
+                "Please specify a config variable [database][adapter]"
+            );
+        }
+    }
+
+    /**
+     * @param array                                      $linesCode
+     * @param string                                     $pattern
      * @param ReflectionProperty|ReflectionClassConstant $attribute
      *
      * @return null|string
@@ -528,7 +567,7 @@ class Model extends AbstractComponent
         }
 
         if (!empty($startLine) && !empty($endLine)) {
-            $attributeDeclaration = join(
+            $attributeDeclaration = implode(
                 '',
                 array_slice(
                     $linesCode,
@@ -536,7 +575,7 @@ class Model extends AbstractComponent
                     $endLine - $startLine + 1
                 )
             );
-            $attributeFormatted = $attributeDeclaration;
+            $attributeFormatted   = $attributeDeclaration;
             if (!empty($attribute->getDocComment())) {
                 $attributeFormatted = "    " . $attribute->getDocComment() . PHP_EOL . $attribute;
             }
@@ -544,6 +583,19 @@ class Model extends AbstractComponent
         }
 
         return null;
+    }
+
+    /**
+     * @param ReferenceInterface $reference
+     * @param string             $namespace
+     *
+     * @return string
+     */
+    protected function getEntityClassName(ReferenceInterface $reference, string $namespace): string
+    {
+        $referencedTable = Utils::camelize($reference->getReferencedTable());
+
+        return "{$namespace}\\{$referencedTable}";
     }
 
     /**
@@ -561,107 +613,10 @@ class Model extends AbstractComponent
     }
 
     /**
-     * Set path to model
-     *
-     * @throw WriteFileException
-     */
-    protected function setModelPath(): void
-    {
-        $modelPath = $this->modelOptions->getOption('modelsDir');
-
-        if (!$this->isAbsolutePath($modelPath)) {
-            $modelPath = $this->path->getRootPath($modelPath);
-        }
-
-        $modelPath .= $this->modelOptions->getOption('className') . '.php';
-
-        if (file_exists($modelPath) && !$this->modelOptions->getOption('force')) {
-            throw new WriteFileException(sprintf(
-                'The model file "%s.php" already exists in models dir',
-                $this->modelOptions->getOption('className')
-            ));
-        }
-
-        $this->modelOptions->setOption('modelPath', $modelPath);
-    }
-
-    /**
-     * @throw InvalidParameterException
-     */
-    protected function checkDataBaseParam(): void
-    {
-        if (!isset($this->modelOptions->getOption('config')->database)) {
-            throw new InvalidParameterException('Database configuration cannot be loaded from your config file.');
-        }
-
-        if (!isset($this->modelOptions->getOption('config')->database->adapter)) {
-            throw new InvalidParameterException(
-                "Adapter was not found in the config. " .
-                "Please specify a config variable [database][adapter]"
-            );
-        }
-    }
-
-    /**
-     * @param ReferenceInterface $reference
-     * @param string $namespace
-     * @return string
-     */
-    protected function getEntityClassName(ReferenceInterface $reference, string $namespace): string
-    {
-        $referencedTable = Utils::camelize($reference->getReferencedTable());
-
-        return "{$namespace}\\{$referencedTable}";
-    }
-
-    /**
-     * Get reference list from option
-     *
-     * @param string $schema
-     * @param AbstractPdo $db
-     * @return array
-     */
-    protected function getReferenceList(?string $schema, AbstractPdo $db): array
-    {
-        if ($this->modelOptions->hasOption('referenceList')) {
-            return $this->modelOptions->getOption('referenceList');
-        }
-
-        $referenceList = [];
-        foreach ($db->listTables($schema) as $name) {
-            $referenceList[$name] = $db->describeReferences($name, $schema);
-        }
-
-        return $referenceList;
-    }
-
-    /**
-     * Set path to folder where models are
-     *
-     * @throw InvalidParameterException
-     */
-    protected function setModelsDir(): void
-    {
-        if ($this->modelOptions->hasOption('modelsDir')) {
-            $this->modelOptions->setOption(
-                'modelsDir',
-                rtrim($this->modelOptions->getOption('modelsDir'), '/\\') . DIRECTORY_SEPARATOR
-            );
-            return;
-        }
-
-        if ($modelsDir = $this->modelOptions->getOption('config')->path('application.modelsDir')) {
-            $this->modelOptions->setOption('modelsDir', rtrim($modelsDir, '/\\') . DIRECTORY_SEPARATOR);
-            return;
-        }
-
-        throw new InvalidParameterException("Builder doesn't know where is the models directory.");
-    }
-
-    /**
      * Returns the associated PHP type
      *
-     * @param  int $type
+     * @param int $type
+     *
      * @return string
      */
     protected function getPHPType(int $type): string
@@ -694,5 +649,77 @@ class Model extends AbstractComponent
             default:
                 return 'string';
         }
+    }
+
+    /**
+     * Get reference list from option
+     *
+     * @param string      $schema
+     * @param AbstractPdo $db
+     *
+     * @return array
+     */
+    protected function getReferenceList(?string $schema, AbstractPdo $db): array
+    {
+        if ($this->modelOptions->hasOption('referenceList')) {
+            return $this->modelOptions->getOption('referenceList');
+        }
+
+        $referenceList = [];
+        foreach ($db->listTables($schema) as $name) {
+            $referenceList[$name] = $db->describeReferences($name, $schema);
+        }
+
+        return $referenceList;
+    }
+
+    /**
+     * Set path to model
+     *
+     * @throw WriteFileException
+     */
+    protected function setModelPath(): void
+    {
+        $modelPath = $this->modelOptions->getOption('modelsDir');
+
+        if (!$this->isAbsolutePath($modelPath)) {
+            $modelPath = $this->path->getRootPath($modelPath);
+        }
+
+        $modelPath .= $this->modelOptions->getOption('className') . '.php';
+
+        if (file_exists($modelPath) && !$this->modelOptions->getOption('force')) {
+            throw new WriteFileException(
+                sprintf(
+                    'The model file "%s.php" already exists in models dir',
+                    $this->modelOptions->getOption('className')
+                )
+            );
+        }
+
+        $this->modelOptions->setOption('modelPath', $modelPath);
+    }
+
+    /**
+     * Set path to folder where models are
+     *
+     * @throw InvalidParameterException
+     */
+    protected function setModelsDir(): void
+    {
+        if ($this->modelOptions->hasOption('modelsDir')) {
+            $this->modelOptions->setOption(
+                'modelsDir',
+                rtrim($this->modelOptions->getOption('modelsDir'), '/\\') . DIRECTORY_SEPARATOR
+            );
+            return;
+        }
+
+        if ($modelsDir = $this->modelOptions->getOption('config')->path('application.modelsDir')) {
+            $this->modelOptions->setOption('modelsDir', rtrim($modelsDir, '/\\') . DIRECTORY_SEPARATOR);
+            return;
+        }
+
+        throw new InvalidParameterException("Builder doesn't know where is the models directory.");
     }
 }

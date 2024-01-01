@@ -1,7 +1,5 @@
 <?php
 
-declare(strict_types=1);
-
 /**
  * This file is part of the Phalcon Developer Tools.
  *
@@ -10,6 +8,8 @@ declare(strict_types=1);
  * For the full copyright and license information, please view
  * the LICENSE file that was distributed with this source code.
  */
+
+declare(strict_types=1);
 
 namespace Phalcon\DevTools\Options;
 
@@ -22,28 +22,81 @@ use Phalcon\DevTools\FactoryOptions;
 class OptionsAware implements FactoryOptions
 {
     /**
-     * Option container
-     *
-     * @var array
-     */
-    protected $options = [];
-
-    /**
      * @param array $options
      */
-    public function __construct(array $options = [])
-    {
-        $this->options = $options;
+    public function __construct(
+        protected array $options = []
+    ) {
     }
 
     /**
-     * Set all options to option container
+     * Get valid option or throw exception
      *
-     * @param array $options
+     * @param mixed $key
+     *
+     * @throw InvalidArgumentException
+     *
+     * @return mixed
      */
-    public function setOptions(array $options): void
+    public function getOption($key)
     {
-        $this->options = $options;
+        if (!isset($this->options[$key])) {
+            throw new InvalidArgumentException("Option " . $key . " hasn't been defined");
+        }
+
+        return $this->options[$key];
+    }
+
+    /**
+     * Get all options from the option container
+     *
+     * @return array
+     */
+    public function getOptions(): array
+    {
+        return $this->options;
+    }
+
+    /**
+     * Return valid option value or default value
+     *
+     * @param mixed $key
+     * @param mixed $defaultOption
+     *
+     * @return mixed
+     */
+    public function getValidOptionOrDefault($key, $defaultOption = '')
+    {
+        if (isset($this->options[$key])) {
+            return $this->options[$key];
+        }
+
+        return $defaultOption;
+    }
+
+    /**
+     * Check whether option container has value with this key
+     *
+     * @param mixed $key
+     *
+     * @return bool
+     */
+    public function hasOption($key): bool
+    {
+        return isset($this->options[$key]);
+    }
+
+    /**
+     * Set option, if it hasn't been defined before
+     *
+     * @param mixed $key
+     * @param mixed $option
+     */
+    public function setNotDefinedOption($key, $option): void
+    {
+        if (!isset($this->options[$key])) {
+            $this->options[$key] = $option;
+        }
     }
 
     /**
@@ -58,16 +111,13 @@ class OptionsAware implements FactoryOptions
     }
 
     /**
-     * Set option, if it hasn't been defined before
+     * Set all options to option container
      *
-     * @param mixed $key
-     * @param mixed $option
+     * @param array $options
      */
-    public function setNotDefinedOption($key, $option): void
+    public function setOptions(array $options): void
     {
-        if (!isset($this->options[$key])) {
-            $this->options[$key] = $option;
-        }
+        $this->options = $options;
     }
 
     /**
@@ -86,60 +136,5 @@ class OptionsAware implements FactoryOptions
         }
 
         $this->options[$key] = $defaultValue;
-    }
-
-    /**
-     * Get all options from the option container
-     *
-     * @return array
-     */
-    public function getOptions(): array
-    {
-        return $this->options;
-    }
-
-    /**
-     * Get valid option or throw exception
-     *
-     * @param mixed $key
-     * @throw InvalidArgumentException
-     *
-     * @return mixed
-     */
-    public function getOption($key)
-    {
-        if (!isset($this->options[$key])) {
-            throw new InvalidArgumentException("Option " . $key . " hasn't been defined");
-        }
-
-        return $this->options[$key];
-    }
-
-    /**
-     * Check whether option container has value with this key
-     *
-     * @param mixed $key
-     * @return bool
-     */
-    public function hasOption($key): bool
-    {
-        return isset($this->options[$key]);
-    }
-
-    /**
-     * Return valid option value or default value
-     *
-     * @param mixed $key
-     * @param mixed $defaultOption
-     *
-     * @return mixed
-     */
-    public function getValidOptionOrDefault($key, $defaultOption = '')
-    {
-        if (isset($this->options[$key])) {
-            return $this->options[$key];
-        }
-
-        return $defaultOption;
     }
 }

@@ -1,7 +1,5 @@
 <?php
 
-declare(strict_types=1);
-
 /**
  * This file is part of the Phalcon Developer Tools.
  *
@@ -11,40 +9,45 @@ declare(strict_types=1);
  * the LICENSE file that was distributed with this source code.
  */
 
+declare(strict_types=1);
+
 namespace Phalcon\DevTools;
 
 use InvalidArgumentException;
-use Phalcon\Config;
+use Phalcon\Config\Config;
 
 class Utils
 {
-    const DB_ADAPTER_POSTGRESQL = 'postgresql';
-
-    const DB_ADAPTER_SQLITE = 'sqlite';
+    public const DB_ADAPTER_POSTGRESQL = 'postgresql';
+    public const DB_ADAPTER_SQLITE     = 'sqlite';
 
     /**
      * Converts the underscore_notation to the UpperCamelCase
      *
      * @param string $string
      * @param string $delimiter
+     *
      * @return string
      */
-    public static function camelize($string, $delimiter = '_')
+    public static function camelize(string $string, string $delimiter = '_'): string
     {
         if (empty($delimiter)) {
             throw new InvalidArgumentException('Please, specify the delimiter');
         }
 
-        $delimiterArray = str_split($delimiter);
+        return self::processString($delimiter, $string);
+    }
 
-        foreach ($delimiterArray as $delimiter) {
-            $stringParts = explode($delimiter, $string);
-            $stringParts = array_map('ucfirst', $stringParts);
-
-            $string = implode('', $stringParts);
-        }
-
-        return $string;
+    /**
+     * Converts the underscore_notation to the lowerCamelCase
+     *
+     * @param string $string
+     *
+     * @return string
+     */
+    public static function lowerCamelize(string $string): string
+    {
+        return lcfirst(self::camelize($string));
     }
 
     /**
@@ -56,26 +59,23 @@ class Utils
      * echo Phalcon\Utils::lowerCamelizeWithDelimiter('coco_bongo', '_', true); // cocoBongo
      * </code>
      *
-     * @param string $string
-     * @param string $delimiter
+     * @param string  $string
+     * @param string  $delimiter
      * @param boolean $useLow
+     *
      * @return string
      */
-    public static function lowerCamelizeWithDelimiter($string, $delimiter = '', $useLow = false)
-    {
+    public static function lowerCamelizeWithDelimiter(
+        string $string,
+        string $delimiter = '',
+        bool $useLow = false
+    ): string {
         if (empty($string)) {
             throw new InvalidArgumentException('Please, specify the string');
         }
 
         if (!empty($delimiter)) {
-            $delimiterArray = str_split($delimiter);
-
-            foreach ($delimiterArray as $delimiter) {
-                $stringParts = explode($delimiter, $string);
-                $stringParts = array_map('ucfirst', $stringParts);
-
-                $string = implode('', $stringParts);
-            }
+            $string = self::processString($delimiter, $string);
         }
 
         if ($useLow) {
@@ -86,23 +86,13 @@ class Utils
     }
 
     /**
-     * Converts the underscore_notation to the lowerCamelCase
-     *
-     * @param string $string
-     * @return string
-     */
-    public static function lowerCamelize($string)
-    {
-        return lcfirst(self::camelize($string));
-    }
-
-    /**
      * Resolves the DB Schema
      *
      * @param Config $config
+     *
      * @return null|string
      */
-    public static function resolveDbSchema(Config $config)
+    public static function resolveDbSchema(Config $config): string | null
     {
         if ($config->offsetExists('schema')) {
             return $config->get('schema');
@@ -123,5 +113,24 @@ class Utils
         }
 
         return null;
+    }
+
+    /**
+     * @param string $delimiter
+     * @param string $string
+     *
+     * @return string
+     */
+    private static function processString(string $delimiter, string $string): string
+    {
+        $delimiterArray = str_split($delimiter);
+
+        foreach ($delimiterArray as $delimiter) {
+            $stringParts = explode($delimiter, $string);
+            $stringParts = array_map('ucfirst', $stringParts);
+
+            $string = implode('', $stringParts);
+        }
+        return $string;
     }
 }

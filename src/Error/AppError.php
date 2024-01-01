@@ -1,7 +1,5 @@
 <?php
 
-declare(strict_types=1);
-
 /**
  * This file is part of the Phalcon Developer Tools.
  *
@@ -11,14 +9,22 @@ declare(strict_types=1);
  * the LICENSE file that was distributed with this source code.
  */
 
+declare(strict_types=1);
+
 namespace Phalcon\DevTools\Error;
+
+use Exception;
+
+use function array_keys;
+use function array_merge;
+use function in_array;
 
 /**
  * @method int type()
  * @method string message()
  * @method string file()
  * @method string line()
- * @method \Exception|null exception()
+ * @method Exception|null exception()
  * @method bool isException()
  * @method bool isError()
  */
@@ -27,7 +33,7 @@ class AppError
     /**
      * @var array
      */
-    protected $attributes = [];
+    protected array $attributes = [];
 
     /**
      * AppError constructor.
@@ -53,7 +59,8 @@ class AppError
      * Magic method to retrieve the attributes.
      *
      * @param string $method
-     * @param mixed $args
+     * @param mixed  $args
+     *
      * @return mixed|null
      */
     public function __call($method, $args)

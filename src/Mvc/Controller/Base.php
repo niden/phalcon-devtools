@@ -1,7 +1,5 @@
 <?php
 
-declare(strict_types=1);
-
 /**
  * This file is part of the Phalcon Developer Tools.
  *
@@ -11,12 +9,14 @@ declare(strict_types=1);
  * the LICENSE file that was distributed with this source code.
  */
 
+declare(strict_types=1);
+
 namespace Phalcon\DevTools\Mvc\Controller;
 
 use Phalcon\Assets\Filters\Cssmin;
 use Phalcon\Assets\Filters\Jsmin;
 use Phalcon\Assets\Manager;
-use Phalcon\Config;
+use Phalcon\Config\Config;
 use Phalcon\DevTools\Resources\AssetsResource;
 use Phalcon\DevTools\Utils\DbUtils;
 use Phalcon\DevTools\Utils\FsUtils;
@@ -29,38 +29,42 @@ use Phalcon\Http\ResponseInterface;
 use Phalcon\Mvc\Controller;
 use Phalcon\Mvc\Router;
 use Phalcon\Mvc\RouterInterface;
+use Phalcon\Mvc\Url;
+use Phalcon\Mvc\Url\UrlInterface;
 use Phalcon\Mvc\View;
-use Phalcon\Registry;
-use Phalcon\Url;
-use Phalcon\Url\UrlInterface;
-use Phalcon\Version as PhVersion;
+use Phalcon\Support\Registry;
+use Phalcon\Support\Version as PhVersion;
+
+use function date;
+use function rtrim;
 
 /**
- * @property Config $config
- * @property FsUtils $fs
- * @property SystemInfo $info
- * @property DbUtils $dbUtils
- * @property Registry $registry
- * @property AssetsResource $resource
- * @property Manager $assets
- * @property Request|RequestInterface $request
- * @property Router|RouterInterface $router
+ * @property Config                     $config
+ * @property FsUtils                    $fs
+ * @property SystemInfo                 $info
+ * @property DbUtils                    $dbUtils
+ * @property Registry                   $registry
+ * @property AssetsResource             $resource
+ * @property Manager                    $assets
+ * @property Request|RequestInterface   $request
+ * @property Router|RouterInterface     $router
  * @property Response|ResponseInterface $response
- * @property View|View $view
- * @property Url|UrlInterface $url
+ * @property View|View                  $view
+ * @property Url|UrlInterface           $url
  */
 abstract class Base extends Controller
 {
+    abstract public function initialize();
+
     public function onConstruct()
     {
         $this->setVars()
-            ->setCss()
-            ->setJs()
-            ->setLayout()
-            ->initialize();
+             ->setCss()
+             ->setJs()
+             ->setLayout()
+             ->initialize()
+        ;
     }
-
-    abstract public function initialize();
 
     /**
      * Register CSS assets.
@@ -72,7 +76,7 @@ abstract class Base extends Controller
         $this->assets
             ->collection('main_css')
             ->setTargetPath('css/webtools.css')
-            ->setTargetUri('css/webtools.css?v=' . Version::get())
+            ->setTargetUri('css/webtools.css?v=' . (new Version())->get())
             ->addCss($this->resource->path('admin-lte/css/adminlte.min.css'), true, false)
             ->addCss(
                 $this->resource->path('admin-lte/plugins/overlayScrollbars/css/OverlayScrollbars.min.css'),
@@ -80,7 +84,8 @@ abstract class Base extends Controller
                 false
             )
             ->join(true)
-            ->addFilter(new Cssmin());
+            ->addFilter(new Cssmin())
+        ;
 
         return $this;
     }
@@ -95,7 +100,7 @@ abstract class Base extends Controller
         $this->assets
             ->collection('footer')
             ->setTargetPath('js/webtools.js')
-            ->setTargetUri('js/webtools.js?v=' . Version::get())
+            ->setTargetUri('js/webtools.js?v=' . (new Version())->get())
             ->addJs($this->resource->path('admin-lte/plugins/jquery/jquery.min.js'), true, false)
             ->addJs($this->resource->path('admin-lte/plugins/jquery-ui/jquery-ui.min.js'), true, false)
             ->addInlineJs("$.widget.bridge('uibutton', $.ui.button);", false, false)
@@ -108,7 +113,20 @@ abstract class Base extends Controller
             ->addJs($this->resource->path('admin-lte/js/adminlte.min.js'), true, false)
             ->addJs($this->resource->path('js/webtools.js'), true, false)
             ->join(true)
-            ->addFilter(new Jsmin());
+            ->addFilter(new Jsmin())
+        ;
+
+        return $this;
+    }
+
+    /**
+     * Sets the base layout.
+     *
+     * @return $this
+     */
+    protected function setLayout()
+    {
+        $this->view->setLayout('webtools');
 
         return $this;
     }
@@ -122,8 +140,8 @@ abstract class Base extends Controller
             [
                 'base_uri'        => $this->url->getBaseUri(),
                 'webtools_uri'    => rtrim('/', $this->url->getBaseUri()) . '/webtools.php',
-                'ptools_version'  => Version::get(),
-                'phalcon_version' => PhVersion::get(),
+                'ptools_version'  => (new Version())->get(),
+                'phalcon_version' => (new PhVersion())->get(),
                 'phalcon_team'    => 'Phalcon Team',
                 'lte_team'        => 'Almsaeed Studio',
                 'phalcon_url'     => 'https://phalcon.io/',
@@ -136,18 +154,6 @@ abstract class Base extends Controller
                 'lte_date'        => '2014-' . date('Y'),
             ]
         );
-
-        return $this;
-    }
-
-    /**
-     * Sets the base layout.
-     *
-     * @return $this
-     */
-    protected function setLayout()
-    {
-        $this->view->setLayout('webtools');
 
         return $this;
     }

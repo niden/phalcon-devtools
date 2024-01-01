@@ -1,7 +1,5 @@
 <?php
 
-declare(strict_types=1);
-
 /**
  * This file is part of the Phalcon Developer Tools.
  *
@@ -11,74 +9,72 @@ declare(strict_types=1);
  * the LICENSE file that was distributed with this source code.
  */
 
+declare(strict_types=1);
+
 namespace Phalcon\DevTools\Error;
 
+use Error;
+use Exception;
 use Phalcon\Di\Injectable;
-use Phalcon\Logger;
+use Phalcon\Logger\Exception as LoggerException;
+use Phalcon\Logger\Logger;
+
+use function error_get_last;
+use function error_reporting;
+use function ini_set;
+use function is_null;
+use function register_shutdown_function;
+use function set_error_handler;
+use function set_exception_handler;
+
+use const E_ALL;
+use const E_COMPILE_ERROR;
+use const E_COMPILE_WARNING;
+use const E_CORE_ERROR;
+use const E_CORE_WARNING;
+use const E_DEPRECATED;
+use const E_ERROR;
+use const E_NOTICE;
+use const E_PARSE;
+use const E_RECOVERABLE_ERROR;
+use const E_STRICT;
+use const E_USER_DEPRECATED;
+use const E_USER_ERROR;
+use const E_USER_NOTICE;
+use const E_USER_WARNING;
+use const E_WARNING;
+use const PHP_SAPI;
 
 class ErrorHandler extends Injectable
 {
-    /**
-     * Registers itself as error and exception handler.
-     */
-    public function register()
+    public function customErrorHandler($errno, $errstr, $errfile, $errline)
     {
-        switch (APPLICATION_ENV) {
-            case ENV_TESTING:
-            case ENV_DEVELOPMENT:
-                ini_set('display_errors', '1');
-                ini_set('display_startup_errors', '1');
-                error_reporting(-1);
-                break;
-            default:
-                ini_set('display_errors', '0');
-                ini_set('display_startup_errors', '0');
-                error_reporting(0);
-                break;
+        if (!($errno & error_reporting())) {
+            return;
         }
 
-        if (PHP_SAPI == 'cli') {
-            ini_set('html_errors', '0');
-        } else {
-            ini_set('html_errors', '1');
-        }
+        $options = [
+            'type'    => $errno,
+            'message' => $errstr,
+            'file'    => $errfile,
+            'line'    => $errline,
+            'isError' => true,
+        ];
 
-        set_error_handler([$this, 'customErrorHandler']);
-
-        $that = $this;
-        set_exception_handler(
-            /** @var \Exception\Error $e */
-            function ($e) use ($that) {
-                $options = [
-                    'type'        => $e->getCode(),
-                    'message'     => $e->getMessage(),
-                    'file'        => $e->getFile(),
-                    'line'        => $e->getLine(),
-                    'isException' => true,
-                    'exception'   => $e,
-                ];
-
-                $that->handle(new AppError($options));
-            }
-        );
-
-        register_shutdown_function(
-            function () use ($that) {
-                if (!is_null($options = error_get_last())) {
-                    $that->handle(new AppError($options));
-                }
-            }
-        );
+        $this->handle(new AppError($options));
     }
 
     /**
      * @param AppError $error
+     *
+     * @return void
+     * @throws LoggerException
      */
     public function handle(AppError $error): void
     {
         $di = $this->getDI();
 
-        $type = $this->mapErrors($error->type());
+        $type    = $this->mapErrors($error->type());
         $message = "$type: {$error->message()} in {$error->file()} on line {$error->line()}";
 
         if ($di->has('logger')) {
@@ -113,6 +109,7 @@ class ErrorHandler extends Injectable
      * Maps error code to a string.
      *
      * @param int $code
+     *
      * @return mixed
      */
     public function mapErrors(int $code)
@@ -158,7 +155,8 @@ class ErrorHandler extends Injectable
     /**
      * Maps error code to a log type.
      *
-     * @param  int $code
+     * @param int $code
+     *
      * @return int
      */
     public function mapErrorsToLogType(int $code): int
@@ -188,20 +186,59 @@ class ErrorHandler extends Injectable
         return Logger::ERROR;
     }
 
-    public function customErrorHandler($errno, $errstr, $errfile, $errline)
+    /**
+     * Registers itself as error and exception handler.
+     *
+     * @return void
+     * @throws LoggerException
+     */
+    public function register()
     {
-        if (!($errno & error_reporting())) {
-            return;
+        switch (APPLICATION_ENV) {
+            case ENV_TESTING:
+            case ENV_DEVELOPMENT:
+                ini_set('display_errors', '1');
+                ini_set('display_startup_errors', '1');
+                error_reporting(-1);
+                break;
+            default:
+                ini_set('display_errors', '0');
+                ini_set('display_startup_errors', '0');
+                error_reporting(0);
+                break;
         }
 
-        $options = [
-            'type'    => $errno,
-            'message' => $errstr,
-            'file'    => $errfile,
-            'line'    => $errline,
-            'isError' => true,
-        ];
+        if (PHP_SAPI == 'cli') {
+            ini_set('html_errors', '0');
+        } else {
+            ini_set('html_errors', '1');
+        }
 
-        $this->handle(new AppError($options));
+        set_error_handler([$this, 'customErrorHandler']);
+
+        $that = $this;
+        set_exception_handler(
+        /** @var Exception|Error $e */
+            function ($e) use ($that) {
+                $options = [
+                    'type'        => $e->getCode(),
+                    'message'     => $e->getMessage(),
+                    'file'        => $e->getFile(),
+                    'line'        => $e->getLine(),
+                    'isException' => true,
+                    'exception'   => $e,
+                ];
+
+                $that->handle(new AppError($options));
+            }
+        );
+
+        register_shutdown_function(
+            function () use ($that) {
+                if (!is_null($options = error_get_last())) {
+                    $that->handle(new AppError($options));
+                }
+            }
+        );
     }
 }

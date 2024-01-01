@@ -1,7 +1,5 @@
 <?php
 
-declare(strict_types=1);
-
 /**
  * This file is part of the Phalcon Developer Tools.
  *
@@ -11,6 +9,8 @@ declare(strict_types=1);
  * the LICENSE file that was distributed with this source code.
  */
 
+declare(strict_types=1);
+
 namespace Phalcon\DevTools\Builder\Component;
 
 use Phalcon\Db\Column;
@@ -19,59 +19,47 @@ use Phalcon\DevTools\Builder\Exception\BuilderException;
 use Phalcon\DevTools\Script\Color;
 use Phalcon\DevTools\Utils;
 use Phalcon\Di\FactoryDefault;
-use Phalcon\Text;
+use Phalcon\Traits\Helper\Str\CamelizeTrait;
+use Phalcon\Traits\Helper\Str\UncamelizeTrait;
+
+use function array_merge;
+use function class_exists;
+use function file_exists;
+use function file_get_contents;
+use function file_put_contents;
+use function in_array;
+use function is_dir;
+use function is_object;
+use function ltrim;
+use function mkdir;
+use function preg_replace;
+use function rtrim;
+use function sprintf;
+use function str_replace;
+use function strlen;
+use function strtolower;
+use function substr;
+use function trim;
+use function ucfirst;
+use function ucwords;
+
+use const DIRECTORY_SEPARATOR;
+use const PHP_EOL;
 
 /**
  * Build CRUDs using Phalcon
  */
 class Scaffold extends AbstractComponent
 {
-    /**
-     * @param string $fieldName
-     * @return string
-     */
-    private function getPossibleLabel(string $fieldName): string
-    {
-        $fieldName = preg_replace('/_id$/', '', $fieldName);
-        $fieldName = preg_replace('/_at$/', '', $fieldName);
-        $fieldName = preg_replace('/_in$/', '', $fieldName);
-        $fieldName = str_replace('_', ' of ', $fieldName);
-
-        return ucwords($fieldName);
-    }
-
-    /**
-     * @param string $className
-     * @return string
-     */
-    private function getPossibleSingular(string $className): string
-    {
-        if (substr($className, strlen($className) - 1, 1) == 's') {
-            return substr($className, 0, strlen($className) - 1);
-        }
-
-        return $className;
-    }
-
-    /**
-     * @param string $className
-     * @return string
-     */
-    private function getPossiblePlural(string $className): string
-    {
-        if (substr($className, strlen($className) - 1, 1) == 's') {
-            return $className;
-        }
-
-        return $className;
-    }
+    use CamelizeTrait;
+    use UncamelizeTrait;
 
     /**
      * @throws BuilderException
      */
     public function build(): bool
     {
-        $name = $this->options->get('name');
+        $name   = $this->options->get('name');
         $config = $this->options->get('config');
 
         if ($name === null) {
@@ -137,8 +125,14 @@ class Scaffold extends AbstractComponent
 
         $this->options->offsetSet('viewsDir', $viewPath);
         $this->options->offsetSet('manager', $di->getShared('modelsManager'));
-        $this->options->offsetSet('className', Text::camelize($name));
-        $this->options->offsetSet('fileName', Text::uncamelize($this->options->get('className')));
+        $this->options->offsetSet(
+            'className',
+            $this->toCamelize($name)
+        );
+        $this->options->offsetSet(
+            'fileName',
+            $this->toUncamelize($this->options->get('className'))
+        );
 
         $modelsNamespace = '';
         if (
@@ -148,7 +142,7 @@ class Scaffold extends AbstractComponent
             $modelsNamespace = $this->options->get('modelsNamespace');
         }
 
-        $modelName = Text::camelize($name);
+        $modelName = $this->toCamelize($name);
 
         if ($modelsNamespace) {
             $modelClass = '\\' . trim($modelsNamespace, '\\') . '\\' . $modelName;
@@ -182,19 +176,19 @@ class Scaffold extends AbstractComponent
 
         $metaData = $di['modelsMetadata'];
 
-        $attributes = $metaData->getAttributes($entity);
-        $dataTypes = $metaData->getDataTypes($entity);
+        $attributes    = $metaData->getAttributes($entity);
+        $dataTypes     = $metaData->getDataTypes($entity);
         $identityField = $metaData->getIdentityField($entity);
         $identityField = $identityField ?: null;
-        $primaryKeys = $metaData->getPrimaryKeyAttributes($entity);
+        $primaryKeys   = $metaData->getPrimaryKeyAttributes($entity);
 
-        $setParams = [];
+        $setParams        = [];
         $selectDefinition = [];
 
         $relationField = '';
 
         $single = $name;
-        $this->options->offsetSet('name', strtolower(Text::camelize($single)));
+        $this->options->offsetSet('name', strtolower($this->toCamelize($single)));
         $this->options->offsetSet('plural', $this->getPossiblePlural($name));
         $this->options->offsetSet('singular', $this->getPossibleSingular($name));
         $this->options->offsetSet('modelClass', $modelClass);
@@ -233,21 +227,57 @@ class Scaffold extends AbstractComponent
 
     /**
      * @param string $var
-     * @param mixed $fields
-     * @param bool $useGetSetters
+     * @param mixed  $fields
+     * @param bool   $useGetSetters
+     *
+     * @return string
+     */
+    private function assignTagDefaults(
+        string $var,
+        mixed $fields,
+        bool $useGetSetters
+    ): string {
+        $code = '';
+        foreach ($fields as $field => $dataType) {
+            if ($useGetSetters) {
+                $accessor = 'get' . $this->toCamelize($field) . '()';
+            } else {
+                $accessor = $field;
+            }
+
+            $code .= '$this->tag->setDefault("' . $field . '", $' .
+                Utils::lowerCamelizeWithDelimiter($var, '-', true)
+                . '->'
+                . $accessor
+                . ');'
+                . PHP_EOL
+                . "\t\t\t";
+        }
+
+        return $code;
+    }
+
+    /**
+     * @param string      $var
+     * @param mixed       $fields
+     * @param bool        $useGetSetters
      * @param null|string $identityField
      *
      * @return string
      */
-    private function captureFilterInput(string $var, $fields, bool $useGetSetters, string $identityField = null): string
-    {
+    private function captureFilterInput(
+        string $var,
+        mixed $fields,
+        bool $useGetSetters,
+        string $identityField = null
+    ): string {
         $code = '';
         foreach ($fields as $field => $dataType) {
             if ($identityField !== null && $field === $identityField) {
                 continue;
             }
 
-            if (\in_array($dataType, [Column::TYPE_DECIMAL, Column::TYPE_INTEGER])) {
+            if (in_array($dataType, [Column::TYPE_DECIMAL, Column::TYPE_INTEGER])) {
                 $fieldCode = '$this->request->getPost("' . $field . '", "int")';
             } elseif ($field === 'email') {
                 $fieldCode = '$this->request->getPost("' . $field . '", "email")';
@@ -269,38 +299,176 @@ class Scaffold extends AbstractComponent
     }
 
     /**
-     * @param string $var
-     * @param mixed $fields
-     * @param bool $useGetSetters
+     * @param string $fieldName
+     *
      * @return string
      */
-    private function assignTagDefaults(string $var, $fields, bool $useGetSetters): string
+    private function getPossibleLabel(string $fieldName): string
     {
-        $code = '';
-        foreach ($fields as $field => $dataType) {
-            if ($useGetSetters) {
-                $accessor = 'get' . Text::camelize($field) . '()';
-            } else {
-                $accessor = $field;
-            }
+        $fieldName = preg_replace('/_id$/', '', $fieldName);
+        $fieldName = preg_replace('/_at$/', '', $fieldName);
+        $fieldName = preg_replace('/_in$/', '', $fieldName);
+        $fieldName = str_replace('_', ' of ', $fieldName);
 
-            $code .= '$this->tag->setDefault("' . $field . '", $' .
-                Utils::lowerCamelizeWithDelimiter($var, '-', true) . '->' . $accessor . ');' . PHP_EOL . "\t\t\t";
+        return ucwords($fieldName);
+    }
+
+    /**
+     * @param string $className
+     *
+     * @return string
+     */
+    private function getPossiblePlural(string $className): string
+    {
+        if (substr($className, strlen($className) - 1, 1) == 's') {
+            return $className;
         }
 
-        return $code;
+        return $className;
+    }
+
+    /**
+     * @param string $className
+     *
+     * @return string
+     */
+    private function getPossibleSingular(string $className): string
+    {
+        if (substr($className, strlen($className) - 1, 1) == 's') {
+            return substr($className, 0, strlen($className) - 1);
+        }
+
+        return $className;
+    }
+
+    /**
+     * Generate controller using scaffold
+     *
+     * @throws BuilderException
+     */
+    private function makeController(): void
+    {
+        $controllerPath = $this->options->get('controllersDir') . $this->options->get('className') . 'Controller.php';
+        if (file_exists($controllerPath) && !$this->options->has('force')) {
+            return;
+        }
+
+        $code           = file_get_contents($this->options->get('templatePath') . '/scaffold/no-forms/Controller.php');
+        $usesNamespaces = false;
+
+        $controllerNamespace = $this->options->has('controllersNamespace')
+            ? (string)$this->options->get('controllersNamespace') : '';
+
+        if (!empty(trim($controllerNamespace)) && $this->checkNamespace($controllerNamespace)) {
+            $code           = str_replace(
+                '$namespace$',
+                'namespace ' . $controllerNamespace . ';' . PHP_EOL,
+                $code
+            );
+            $usesNamespaces = true;
+        } else {
+            $code = str_replace('$namespace$', ' ', $code);
+        }
+
+        $modelNamespace = (string)$this->options->get('modelsNamespace');
+        if (
+            ($this->options->has('modelsNamespace') && $modelNamespace && $this->checkNamespace($modelNamespace))
+            || $usesNamespaces
+        ) {
+            $code = str_replace(
+                '$useFullyQualifiedModelName$',
+                "use " . ltrim($this->options->get('modelClass'), '\\') . ';',
+                $code
+            );
+        } else {
+            $code = str_replace('$useFullyQualifiedModelName$', '', $code);
+        }
+
+        $code = str_replace('$fullyQualifiedModelName$', $this->options->get('modelClass'), $code);
+
+        $code = str_replace(
+            '$singularVar$',
+            '$' . Utils::lowerCamelizeWithDelimiter($this->options->get('singular'), '-', true),
+            $code
+        );
+        $code = str_replace('$singular$', $this->options->get('singular'), $code);
+
+        $code = str_replace(
+            '$pluralVar$',
+            '$' . Utils::lowerCamelizeWithDelimiter($this->options->get('plural'), '-', true),
+            $code
+        );
+        $code = str_replace('$plural$', $this->options->get('plural'), $code);
+
+        $code = str_replace('$className$', $this->options->get('className'), $code);
+
+        $code = str_replace(
+            '$assignInputFromRequestCreate$',
+            $this->captureFilterInput(
+                $this->options->get('singular'),
+                $this->options->get('dataTypes'),
+                (bool)$this->options->get('genSettersGetters'),
+                $this->options->get('identityField')
+            ),
+            $code
+        );
+
+        $code = str_replace(
+            '$assignInputFromRequestUpdate$',
+            $this->captureFilterInput(
+                $this->options->get('singular'),
+                $this->options->get('dataTypes'),
+                (bool)$this->options->get('genSettersGetters'),
+                $this->options->get('identityField')
+            ),
+            $code
+        );
+
+        $code = str_replace(
+            '$assignTagDefaults$',
+            $this->assignTagDefaults(
+                $this->options->get('singular'),
+                $this->options->get('dataTypes'),
+                (bool)$this->options->get('genSettersGetters')
+            ),
+            $code
+        );
+
+        $attributes = $this->options->get('attributes');
+
+        $code = str_replace('$pkVar$', '$' . $attributes[0], $code);
+
+        if ((bool)$this->options->get('genSettersGetters')) {
+            $code = str_replace('$pkGet$', 'get' . $this->toCamelize($attributes[0]) . '()', $code);
+        } else {
+            $code = str_replace('$pkGet$', $attributes[0], $code);
+        }
+
+        $code = str_replace('$pk$', $attributes[0], $code);
+
+        if ($this->isConsole()) {
+            echo $controllerPath, PHP_EOL;
+        }
+
+        $code = str_replace("\t", "    ", $code);
+        file_put_contents($controllerPath, $code);
     }
 
     /**
      * @param string $attribute
-     * @param int $dataType
-     * @param mixed $relationField
-     * @param array $selectDefinition
+     * @param int    $dataType
+     * @param mixed  $relationField
+     * @param array  $selectDefinition
+     *
      * @return string
      */
-    private function makeField(string $attribute, int $dataType, $relationField, array $selectDefinition): string
-    {
-        $id = 'field' . Text::camelize($attribute);
+    private function makeField(
+        string $attribute,
+        int $dataType,
+        mixed $relationField,
+        array $selectDefinition
+    ): string {
+        $id   = 'field' . $this->toCamelize($attribute);
         $code = '<div class="form-group">' . PHP_EOL . "\t" . '<label for="' . $id .
             '" class="col-sm-2 control-label">' . $this->getPossibleLabel($attribute) . '</label>' . PHP_EOL .
             "\t" . '<div class="col-sm-10">' . PHP_EOL;
@@ -317,7 +485,7 @@ class Scaffold extends AbstractComponent
                         '", [], "class" => "form-control", "id" => "' . $id . '"]); ?>';
                     break;
                 case Column::TYPE_CHAR:
-                    $code .=  "\t\t" . '<?php echo $this->tag->textField(["' . $attribute .
+                    $code .= "\t\t" . '<?php echo $this->tag->textField(["' . $attribute .
                         '", "class" => "form-control", "id" => "' . $id . '"]); ?>';
                     break;
                 case Column::TYPE_DECIMAL:
@@ -348,14 +516,19 @@ class Scaffold extends AbstractComponent
 
     /**
      * @param string $attribute
-     * @param int $dataType
-     * @param mixed $relationField
-     * @param array $selectDefinition
+     * @param int    $dataType
+     * @param mixed  $relationField
+     * @param array  $selectDefinition
+     *
      * @return string
      */
-    private function makeFieldVolt(string $attribute, int $dataType, $relationField, array $selectDefinition): string
-    {
-        $id = 'field' . Text::camelize($attribute);
+    private function makeFieldVolt(
+        string $attribute,
+        int $dataType,
+        mixed $relationField,
+        array $selectDefinition
+    ): string {
+        $id   = 'field' . $this->toCamelize($attribute);
         $code = '<div class="form-group">' . PHP_EOL . "\t" . '<label for="' . $id .
             '" class="col-sm-2 control-label">' . $this->getPossibleLabel($attribute) . '</label>' . PHP_EOL . "\t" .
             '<div class="col-sm-10">' . PHP_EOL;
@@ -405,13 +578,14 @@ class Scaffold extends AbstractComponent
      * Build fields for different actions
      *
      * @param string $action
+     *
      * @return string
      */
     private function makeFields(string $action): string
     {
-        $relationField      = $this->options->get('relationField');
-        $selectDefinition   = $this->options->get('selectDefinition')->toArray();
-        $identityField      = $this->options->get('identityField');
+        $relationField    = $this->options->get('relationField');
+        $selectDefinition = $this->options->get('selectDefinition')->toArray();
+        $identityField    = $this->options->get('identityField');
 
         $code = '';
         foreach ($this->options->get('dataTypes') as $attribute => $dataType) {
@@ -427,13 +601,14 @@ class Scaffold extends AbstractComponent
 
     /**
      * @param string $action
+     *
      * @return string
      */
     private function makeFieldsVolt(string $action): string
     {
-        $relationField      = $this->options->get('relationField');
-        $selectDefinition   = $this->options->get('selectDefinition')->toArray();
-        $identityField      = $this->options->get('identityField');
+        $relationField    = $this->options->get('relationField');
+        $selectDefinition = $this->options->get('selectDefinition')->toArray();
+        $identityField    = $this->options->get('identityField');
 
         $code = '';
         foreach ($this->options->get('dataTypes') as $attribute => $dataType) {
@@ -445,106 +620,6 @@ class Scaffold extends AbstractComponent
         }
 
         return $code;
-    }
-
-    /**
-     * Generate controller using scaffold
-     * @throws BuilderException
-     */
-    private function makeController(): void
-    {
-        $controllerPath = $this->options->get('controllersDir') . $this->options->get('className') . 'Controller.php';
-        if (file_exists($controllerPath) && !$this->options->has('force')) {
-            return;
-        }
-
-        $code = file_get_contents($this->options->get('templatePath') . '/scaffold/no-forms/Controller.php');
-        $usesNamespaces = false;
-
-        $controllerNamespace = $this->options->has('controllersNamespace')
-            ? (string) $this->options->get('controllersNamespace') : '';
-
-        if (!empty(trim($controllerNamespace)) && $this->checkNamespace($controllerNamespace)) {
-            $code = str_replace(
-                '$namespace$',
-                'namespace ' . $controllerNamespace . ';' . PHP_EOL,
-                $code
-            );
-            $usesNamespaces = true;
-        } else {
-            $code = str_replace('$namespace$', ' ', $code);
-        }
-
-        $modelNamespace = (string)$this->options->get('modelsNamespace');
-        if (
-            ($this->options->has('modelsNamespace') && $modelNamespace && $this->checkNamespace($modelNamespace))
-            || $usesNamespaces
-        ) {
-            $code = str_replace(
-                '$useFullyQualifiedModelName$',
-                "use " . ltrim($this->options->get('modelClass'), '\\') . ';',
-                $code
-            );
-        } else {
-            $code = str_replace('$useFullyQualifiedModelName$', '', $code);
-        }
-
-        $code = str_replace('$fullyQualifiedModelName$', $this->options->get('modelClass'), $code);
-
-        $code = str_replace(
-            '$singularVar$',
-            '$' . Utils::lowerCamelizeWithDelimiter($this->options->get('singular'), '-', true),
-            $code
-        );
-        $code = str_replace('$singular$', $this->options->get('singular'), $code);
-
-        $code = str_replace(
-            '$pluralVar$',
-            '$' . Utils::lowerCamelizeWithDelimiter($this->options->get('plural'), '-', true),
-            $code
-        );
-        $code = str_replace('$plural$', $this->options->get('plural'), $code);
-
-        $code = str_replace('$className$', $this->options->get('className'), $code);
-
-        $code = str_replace('$assignInputFromRequestCreate$', $this->captureFilterInput(
-            $this->options->get('singular'),
-            $this->options->get('dataTypes'),
-            (bool) $this->options->get('genSettersGetters'),
-            $this->options->get('identityField')
-        ), $code);
-
-        $code = str_replace('$assignInputFromRequestUpdate$', $this->captureFilterInput(
-            $this->options->get('singular'),
-            $this->options->get('dataTypes'),
-            (bool) $this->options->get('genSettersGetters'),
-            $this->options->get('identityField')
-        ), $code);
-
-        $code = str_replace('$assignTagDefaults$', $this->assignTagDefaults(
-            $this->options->get('singular'),
-            $this->options->get('dataTypes'),
-            (bool) $this->options->get('genSettersGetters')
-        ), $code);
-
-        $attributes = $this->options->get('attributes');
-
-        $code = str_replace('$pkVar$', '$' . $attributes[0], $code);
-
-        if ((bool) $this->options->get('genSettersGetters')) {
-            $code = str_replace('$pkGet$', 'get' . Text::camelize($attributes[0]) . '()', $code);
-        } else {
-            $code = str_replace('$pkGet$', $attributes[0], $code);
-        }
-
-        $code = str_replace('$pk$', $attributes[0], $code);
-
-        if ($this->isConsole()) {
-            echo $controllerPath, PHP_EOL;
-        }
-
-        $code = str_replace("\t", "    ", $code);
-        file_put_contents($controllerPath, $code);
     }
 
     /**
@@ -596,7 +671,7 @@ class Scaffold extends AbstractComponent
             mkdir($dirPathLayouts, 0777, true);
         }
 
-        $fileName = Text::uncamelize($this->options->get('fileName'));
+        $fileName = $this->toUncamelize($this->options->get('fileName'));
         $viewPath = $dirPathLayouts . DIRECTORY_SEPARATOR . $fileName . '.volt';
         if (!file_exists($viewPath) || $this->options->has('force')) {
             // View model layout
@@ -624,6 +699,7 @@ class Scaffold extends AbstractComponent
 
     /**
      * @param string $type
+     *
      * @throws BuilderException
      */
     private function makeView(string $type): void
@@ -646,40 +722,6 @@ class Scaffold extends AbstractComponent
         $code = file_get_contents($templatePath);
         $code = str_replace('$plural$', $this->options->get('plural'), $code);
         $code = str_replace('$captureFields$', self::makeFields($type), $code);
-
-        if ($this->isConsole()) {
-            echo $viewPath, PHP_EOL;
-        }
-
-        $code = str_replace("\t", "    ", $code);
-        file_put_contents($viewPath, $code);
-    }
-
-    /**
-     * @param string $type
-     * @throws BuilderException
-     */
-    private function makeViewVolt(string $type): void
-    {
-        $dirPath = $this->options->get('viewsDir') . $this->options->get('fileName');
-        if (!is_dir($dirPath)) {
-            mkdir($dirPath, 0777, true);
-        }
-
-        $viewPath = $dirPath . DIRECTORY_SEPARATOR . $type . '.volt';
-        if (file_exists($viewPath) && !$this->options->has('force')) {
-            return;
-        }
-
-        $templatePath = $this->options->get('templatePath') . '/scaffold/no-forms/views/' . $type . '.volt';
-        if (!file_exists($templatePath)) {
-            throw new BuilderException(sprintf('Template "%s" does not exist.', $templatePath));
-        }
-
-        $code = file_get_contents($templatePath);
-
-        $code = str_replace('$plural$', $this->options->get('plural'), $code);
-        $code = str_replace('$captureFields$', self::makeFieldsVolt($type), $code);
 
         if ($this->isConsole()) {
             echo $viewPath, PHP_EOL;
@@ -717,28 +759,31 @@ class Scaffold extends AbstractComponent
         }
 
         $rowCode = '';
-        $this->options->offsetSet('allReferences', array_merge(
-            $this->options->get('autocompleteFields')->toArray(),
-            $this->options->get('selectDefinition')->toArray()
-        ));
+        $this->options->offsetSet(
+            'allReferences',
+            array_merge(
+                $this->options->get('autocompleteFields')->toArray(),
+                $this->options->get('selectDefinition')->toArray()
+            )
+        );
         foreach ($this->options->get('dataTypes') as $fieldName => $dataType) {
             $rowCode .= "\t\t\t" . '<td><?php echo ';
             if (!isset($this->options->get('allReferences')[$fieldName])) {
                 if ($this->options->get('genSettersGetters')) {
                     $rowCode .= '$' . Utils::lowerCamelizeWithDelimiter($this->options->get('singular'), '-', true) .
-                        '->get' . Text::camelize($fieldName) . '()';
+                        '->get' . $this->toCamelize($fieldName) . '()';
                 } else {
                     $rowCode .= '$' . $this->options->get('singular') . '[\'' . $fieldName . '\']';
                 }
             } else {
                 $detailField = ucfirst($this->options->get('allReferences')[$fieldName]['detail']);
-                $rowCode .= '$' . $this->options->get('singular') . '->get' .
+                $rowCode     .= '$' . $this->options->get('singular') . '->get' .
                     $this->options->get('allReferences')[$fieldName]['tableName'] . '()->get' . $detailField . '();';
             }
             $rowCode .= '; ?></td>' . PHP_EOL;
         }
 
-        $idField =  $this->options->get('attributes')[0];
+        $idField = $this->options->get('attributes')[0];
 
         $code = file_get_contents($templatePath);
 
@@ -786,10 +831,13 @@ class Scaffold extends AbstractComponent
         }
 
         $rowCode = '';
-        $this->options->offsetSet('allReferences', array_merge(
-            $this->options->get('autocompleteFields')->toArray(),
-            $this->options->get('selectDefinition')->toArray()
-        ));
+        $this->options->offsetSet(
+            'allReferences',
+            array_merge(
+                $this->options->get('autocompleteFields')->toArray(),
+                $this->options->get('selectDefinition')->toArray()
+            )
+        );
         foreach ($this->options->get('dataTypes') as $fieldName => $dataType) {
             $rowCode .= "\t\t\t" . '<td>{{ ';
             if (!isset($this->options->get('allReferences')[$fieldName])) {
@@ -801,7 +849,7 @@ class Scaffold extends AbstractComponent
                 }
             } else {
                 $detailField = ucfirst($this->options->get('allReferences')[$fieldName]['detail']);
-                $rowCode .= $this->options->get('singular') . '.get' .
+                $rowCode     .= $this->options->get('singular') . '.get' .
                     $this->options->get('allReferences')[$fieldName]['tableName'] . '().get' . $detailField . '()';
             }
             $rowCode .= ' }}</td>' . PHP_EOL;
@@ -820,6 +868,41 @@ class Scaffold extends AbstractComponent
             $code
         );
         $code = str_replace('$pk$', $idField, $code);
+
+        if ($this->isConsole()) {
+            echo $viewPath, PHP_EOL;
+        }
+
+        $code = str_replace("\t", "    ", $code);
+        file_put_contents($viewPath, $code);
+    }
+
+    /**
+     * @param string $type
+     *
+     * @throws BuilderException
+     */
+    private function makeViewVolt(string $type): void
+    {
+        $dirPath = $this->options->get('viewsDir') . $this->options->get('fileName');
+        if (!is_dir($dirPath)) {
+            mkdir($dirPath, 0777, true);
+        }
+
+        $viewPath = $dirPath . DIRECTORY_SEPARATOR . $type . '.volt';
+        if (file_exists($viewPath) && !$this->options->has('force')) {
+            return;
+        }
+
+        $templatePath = $this->options->get('templatePath') . '/scaffold/no-forms/views/' . $type . '.volt';
+        if (!file_exists($templatePath)) {
+            throw new BuilderException(sprintf('Template "%s" does not exist.', $templatePath));
+        }
+
+        $code = file_get_contents($templatePath);
+
+        $code = str_replace('$plural$', $this->options->get('plural'), $code);
+        $code = str_replace('$captureFields$', self::makeFieldsVolt($type), $code);
 
         if ($this->isConsole()) {
             echo $viewPath, PHP_EOL;

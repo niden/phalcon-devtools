@@ -1,35 +1,56 @@
-# For local development only.
-
-version: '3'
-
+version: "3.6"
 services:
-  devtools-8.0:
-    container_name: devtools-8.0
-    hostname: devtools-80
-    build: docker/8.0
-    working_dir: /srv
+  service_php:
+    build:
+      context: ./docker/php
+    working_dir: /app
+    restart: always
     volumes:
-      - .:/srv
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
+      - ./:/app
+#      - ./docker/php/mods/phalcon.ini:/etc/php/7.4/fpm/conf.d/50-phalcon.ini
+#      - ./docker/php/mods/phalcon.ini:/etc/php/7.4/cli/conf.d/50-phalcon.ini
+    depends_on:
+      - service_mysql
+      - service_postgres
 
-  mysql:
-    container_name: devtools-mysql
-    image: mariadb:10.6.8
-    environment:
-      - MYSQL_ROOT_PASSWORD=secret
-      - MYSQL_USER=phalcon
-      - MYSQL_DATABASE=phalcon
-      - MYSQL_PASSWORD=secret
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
+  service_nginx:
+    image: nginx:alpine
+    restart: always
+    ports:
+      - 8081:80
+    volumes:
+      - ./:/app
+      - ./docker/nginx/conf.d:/etc/nginx/conf.d
+      - ./docker/nginx/fastcgi.conf:/etc/nginx/fastcgi.conf
+      - ./docker/nginx/fastcgi-php.conf:/etc/nginx/fastcgi-php.conf
+    depends_on:
+      - service_php
 
-  postgres:
-    container_name: devtools-postgres
-    image: postgres:15-alpine
+  service_mysql:
+    image: mariadb
+    restart: always
     environment:
-      - POSTGRES_PASSWORD=secret
-      - POSTGRES_USER=phalcon
-      - POSTGRES_DB=phalcon
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
+      - MYSQL_DATABASE=devtools
+      - MYSQL_USER=devtools
+      - MYSQL_PASSWORD=password
+      - MYSQL_ROOT_PASSWORD=password
+    volumes:
+      - db_mysql_data:/var/lib/mysql/
+      - ./docker/mysql/config:/etc/mysql/conf.d/
+
+  service_postgres:
+    image: postgis/postgis:13-master
+    restart: always
+    environment:
+      - POSTGRES_USER=devtools
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=devtools
+    volumes:
+      - db_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: pg_isready -q -d devtools -U devtools
+      timeout: 5s
+
+volumes:
+  db_mysql_data:
+  db_postgres_data:

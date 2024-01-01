@@ -1,7 +1,5 @@
 <?php
 
-declare(strict_types=1);
-
 /**
  * This file is part of the Phalcon Developer Tools.
  *
@@ -11,9 +9,19 @@ declare(strict_types=1);
  * the LICENSE file that was distributed with this source code.
  */
 
+declare(strict_types=1);
+
 namespace Phalcon\DevTools\Commands;
 
 use Phalcon\DevTools\Script\Color;
+
+use function fclose;
+use function fgets;
+use function fopen;
+use function fwrite;
+use function getcwd;
+use function mkdir;
+use function trim;
 
 /**
  * .phalcon is missing Exception
@@ -23,27 +31,22 @@ use Phalcon\DevTools\Script\Color;
  */
 class DotPhalconMissingException extends CommandsException implements ISelfHealingException
 {
-    const DEFAULT_MESSAGE = "This command must be run inside a Phalcon project with a .phalcon directory.";
-    const RESOLUTION_PROMPT = "Shall I create the .phalcon directory now? (y/n)";
+    public const DEFAULT_MESSAGE   = "This command must be run inside a Phalcon project with a .phalcon directory.";
+    public const RESOLUTION_PROMPT = "Shall I create the .phalcon directory now? (y/n)";
 
     public function __construct($message = self::DEFAULT_MESSAGE, $code = 0)
     {
         $this->message = $message;
-        $this->code = $code;
+        $this->code    = $code;
 
         parent::__construct();
-    }
-
-    public function scanPathMessage(): string
-    {
-        return 'One was not found at ' . getcwd();
     }
 
     public function promptResolution(): bool
     {
         fwrite(STDOUT, Color::info(self::RESOLUTION_PROMPT));
         $handle = fopen("php://stdin", "r");
-        $line = fgets($handle);
+        $line   = fgets($handle);
         if (trim(mb_strtolower($line)) != 'y') {
             echo "ABORTING!\n";
             return false;
@@ -60,5 +63,10 @@ class DotPhalconMissingException extends CommandsException implements ISelfHeali
     public function resolve(): bool
     {
         return mkdir(getcwd() . '/.phalcon');
+    }
+
+    public function scanPathMessage(): string
+    {
+        return 'One was not found at ' . getcwd();
     }
 }

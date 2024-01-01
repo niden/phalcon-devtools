@@ -1,7 +1,5 @@
 <?php
 
-declare(strict_types=1);
-
 /**
  * This file is part of the Phalcon Developer Tools.
  *
@@ -11,10 +9,34 @@ declare(strict_types=1);
  * the LICENSE file that was distributed with this source code.
  */
 
+declare(strict_types=1);
+
 namespace Phalcon\DevTools\Builder\Component;
 
+use Exception;
 use Phalcon\DevTools\Builder\Exception\BuilderException;
 use SplFileInfo;
+
+use function fclose;
+use function file_exists;
+use function file_get_contents;
+use function fopen;
+use function fwrite;
+use function json_decode;
+use function mkdir;
+use function preg_quote;
+use function preg_replace;
+use function realpath;
+use function rtrim;
+use function sprintf;
+use function str_replace;
+use function strcasecmp;
+use function strtolower;
+use function touch;
+use function trim;
+use function ucfirst;
+
+use const DIRECTORY_SEPARATOR;
 
 /**
  * Builder to create module skeletons
@@ -24,7 +46,7 @@ class Module extends AbstractComponent
     /**
      * @var array
      */
-    protected $moduleDirectories = [
+    protected array $moduleDirectories = [
         'config',
         'controllers',
         'models',
@@ -36,7 +58,7 @@ class Module extends AbstractComponent
      *
      * @var array
      */
-    protected $variableValues = [];
+    protected array $variableValues = [];
 
     /**
      * Module build
@@ -82,12 +104,15 @@ class Module extends AbstractComponent
             ->buildDirectories()
             ->getVariableValues()
             ->createConfig()
-            ->createModule();
+            ->createModule()
+        ;
 
-        $this->notifySuccess(sprintf(
-            'Module "%s" was successfully created.',
-            $this->options->get('name')
-        ));
+        $this->notifySuccess(
+            sprintf(
+                'Module "%s" was successfully created.',
+                $this->options->get('name')
+            )
+        );
     }
 
     /**
@@ -102,10 +127,12 @@ class Module extends AbstractComponent
         $moduleName = $this->options->get('name');
 
         if (file_exists($modulesDir . DIRECTORY_SEPARATOR . $moduleName)) {
-            throw new BuilderException(sprintf(
-                'The Module "%s" already exists in modules dir',
-                $moduleName
-            ));
+            throw new BuilderException(
+                sprintf(
+                    'The Module "%s" already exists in modules dir',
+                    $moduleName
+                )
+            );
         }
 
         $modulesPath = new SplFileInfo($modulesDir);
@@ -134,10 +161,10 @@ class Module extends AbstractComponent
                     );
                 }
             }
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             throw new BuilderException(
                 $e->getMessage(),
-                (int) $e->getCode(),
+                (int)$e->getCode(),
                 ($e instanceof BuilderException ? null : $e)
             );
         }
@@ -194,7 +221,7 @@ class Module extends AbstractComponent
         if (count($this->variableValues) > 0) {
             foreach ($this->variableValues as $variableValueKey => $variableValue) {
                 $variableValueKeyRegEx = '/@@' . preg_quote($variableValueKey, '/') . '@@/';
-                $str = preg_replace($variableValueKeyRegEx, $variableValue, $str);
+                $str                   = preg_replace($variableValueKeyRegEx, $variableValue, $str);
             }
         }
 
@@ -210,7 +237,7 @@ class Module extends AbstractComponent
     protected function getVariableValues()
     {
         $variableValuesResult = [];
-        $variablesJsonFile = $this->options->get('templatePath') . DIRECTORY_SEPARATOR . 'variables.json';
+        $variablesJsonFile    = $this->options->get('templatePath') . DIRECTORY_SEPARATOR . 'variables.json';
 
         if (file_exists($variablesJsonFile)) {
             $variableValues = json_decode(file_get_contents($variablesJsonFile), true);
@@ -231,6 +258,32 @@ class Module extends AbstractComponent
     }
 
     /**
+     * Creates the configuration
+     *
+     * @return $this
+     */
+    private function createConfig()
+    {
+        $type       = $this->options->get('config-type', 'php');
+        $modulesDir = $this->options->get('modulesDir');
+        $moduleName = $this->options->get('name');
+        $namespace  = $this->options->get('namespace');
+
+        $getFile = $this->options->get('templatePath') . DIRECTORY_SEPARATOR . 'config.' . $type;
+        $putFile = $modulesDir . DIRECTORY_SEPARATOR . $moduleName . DIRECTORY_SEPARATOR;
+        $putFile .= 'config' . DIRECTORY_SEPARATOR . 'config.' . $type;
+
+        $this->generateFile(
+            $getFile,
+            $putFile,
+            $moduleName,
+            $namespace
+        );
+
+        return $this;
+    }
+
+    /**
      * Create Module
      *
      * @return $this
@@ -241,36 +294,10 @@ class Module extends AbstractComponent
         $moduleName = $this->options->get('name');
         $namespace  = $this->options->get('namespace');
 
-        $getFile = $this->options->get('templatePath')  . DIRECTORY_SEPARATOR . 'Module.php';
+        $getFile = $this->options->get('templatePath') . DIRECTORY_SEPARATOR . 'Module.php';
         $putFile = $modulesDir . DIRECTORY_SEPARATOR . $moduleName . DIRECTORY_SEPARATOR . 'Module.php';
 
         $this->generateFile($getFile, $putFile, $moduleName, $namespace);
-
-        return $this;
-    }
-
-    /**
-     * Creates the configuration
-     *
-     * @return $this
-     */
-    private function createConfig()
-    {
-        $type = $this->options->get('config-type', 'php');
-        $modulesDir = $this->options->get('modulesDir');
-        $moduleName = $this->options->get('name');
-        $namespace  = $this->options->get('namespace');
-
-        $getFile = $this->options->get('templatePath')  . DIRECTORY_SEPARATOR . 'config.' . $type;
-        $putFile = $modulesDir . DIRECTORY_SEPARATOR . $moduleName . DIRECTORY_SEPARATOR;
-        $putFile .= 'config' . DIRECTORY_SEPARATOR . 'config.' . $type;
-
-        $this->generateFile(
-            $getFile,
-            $putFile,
-            $moduleName,
-            $namespace
-        );
 
         return $this;
     }

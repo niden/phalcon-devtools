@@ -1,7 +1,5 @@
 <?php
 
-declare(strict_types=1);
-
 /**
  * This file is part of the Phalcon Developer Tools.
  *
@@ -11,20 +9,37 @@ declare(strict_types=1);
  * the LICENSE file that was distributed with this source code.
  */
 
+declare(strict_types=1);
+
 namespace Phalcon\DevTools\Builder;
 
-use Phalcon\Config;
+use Phalcon\Config\Config;
 use Phalcon\Config\Adapter\Ini as ConfigIni;
+use Phalcon\Config\Exception as ConfigException;
 use Phalcon\DevTools\Builder\Exception\BuilderException;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
 
+use function file_exists;
+use function is_array;
+use function preg_match;
+use function realpath;
+use function rtrim;
+use function str_replace;
+use function strpos;
+use function strtoupper;
+use function substr;
+use function trim;
+
+use const DIRECTORY_SEPARATOR;
+use const PHP_OS;
+
 class Path
 {
     /**
-     * @var string|null
+     * @var string
      */
-    protected $rootPath = null;
+    protected string $rootPath;
 
     public function __construct(string $rootPath = null)
     {
@@ -34,11 +49,13 @@ class Path
     /**
      * Tries to find the current configuration in the application
      *
-     * @param string $type Config type: ini | php
+     * @param string|null $type Config type: ini | php
+     *
      * @return Config
      * @throws BuilderException
+     * @throws ConfigException
      */
-    public function getConfig($type = null): Config
+    public function getConfig(?string $type = null): Config
     {
         $types = ['php' => true, 'ini' => true];
         $type  = isset($types[$type]) ? $type : 'ini';
@@ -78,7 +95,7 @@ class Path
 
     /**
      * @param null|string $path
-    */
+     */
     public function setRootPath(?string $path = null)
     {
         $this->rootPath = rtrim(str_replace('/', DIRECTORY_SEPARATOR, $path), '\\/') . DIRECTORY_SEPARATOR;

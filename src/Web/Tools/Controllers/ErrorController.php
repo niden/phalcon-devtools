@@ -1,7 +1,5 @@
 <?php
 
-declare(strict_types=1);
-
 /**
  * This file is part of the Phalcon Developer Tools.
  *
@@ -10,6 +8,8 @@ declare(strict_types=1);
  * For the full copyright and license information, please view
  * the LICENSE file that was distributed with this source code.
  */
+
+declare(strict_types=1);
 
 namespace Phalcon\DevTools\Web\Tools\Controllers;
 
@@ -118,7 +118,7 @@ class ErrorController extends Base
             ->setTargetPath('css/webtools.css')
             ->setTargetUri('css/webtools.css?v=' . Version::get())
             ->addCss($this->resource->path('admin-lte/css/adminlte.min.css'), true, false)
-            ->join(true)
+            ->implode(true)
             ->addFilter(new Cssmin());
 
         return $this;
@@ -141,7 +141,7 @@ class ErrorController extends Base
             ->addJs($this->resource->path('admin-lte/plugins/bootstrap/js/bootstrap.bundle.min.js'), true, false)
             ->addJs($this->resource->path('admin-lte/js/adminlte.min.js'), true, false)
             ->addJs($this->resource->path('js/webtools.js'), true, false)
-            ->join(true)
+            ->implode(true)
             ->addFilter(new Jsmin());
 
         return $this;

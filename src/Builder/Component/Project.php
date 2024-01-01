@@ -1,7 +1,5 @@
 <?php
 
-declare(strict_types=1);
-
 /**
  * This file is part of the Phalcon Developer Tools.
  *
@@ -11,47 +9,59 @@ declare(strict_types=1);
  * the LICENSE file that was distributed with this source code.
  */
 
+declare(strict_types=1);
+
 namespace Phalcon\DevTools\Builder\Component;
 
 use Phalcon\DevTools\Builder\Exception\BuilderException;
 use Phalcon\DevTools\Builder\Project\Cli;
 use Phalcon\DevTools\Builder\Project\Micro;
 use Phalcon\DevTools\Builder\Project\Modules;
-use Phalcon\DevTools\Builder\Project\ProjectBuilder;
+use Phalcon\DevTools\Builder\Project\AbstractProjectBuilder;
 use Phalcon\DevTools\Builder\Project\Simple;
 use Phalcon\DevTools\Utils\FsUtils;
 use SplFileInfo;
+
+use function array_keys;
+use function file_exists;
+use function implode;
+use function is_dir;
+use function is_writable;
+use function mkdir;
+use function sprintf;
+use function str_replace;
+
+use const DIRECTORY_SEPARATOR;
 
 /**
  * Builder to create application skeletons
  */
 class Project extends AbstractComponent
 {
-    const TYPE_MICRO   = 'micro';
-    const TYPE_SIMPLE  = 'simple';
-    const TYPE_MODULES = 'modules';
-    const TYPE_CLI     = 'cli';
-
+    public const TYPE_CLI     = 'cli';
+    public const TYPE_MICRO   = 'micro';
+    public const TYPE_MODULES = 'modules';
+    public const TYPE_SIMPLE  = 'simple';
     /**
      * Current Project Type
      *
      * @var string
      */
-    private $currentType = self::TYPE_SIMPLE;
+    private string $currentType = self::TYPE_SIMPLE;
 
     /**
      * Force create project if directory exists
      *
-     * @var string
+     * @var bool
      */
-    private $force = false;
+    private bool $force = false;
 
     /**
      * Available Project Types
      *
      * @var array
      */
-    private $types = [
+    private array $types = [
         self::TYPE_MICRO   => Micro::class,
         self::TYPE_SIMPLE  => Simple::class,
         self::TYPE_MODULES => Modules::class,
@@ -73,9 +83,13 @@ class Project extends AbstractComponent
             $this->path->setRootPath($this->options->get('directory'));
         }
 
-        $templatePath =
-            str_replace('src/' . str_replace('\\', DIRECTORY_SEPARATOR, __CLASS__) . '.php', '', __FILE__) .
-            'templates';
+        $templatePath = str_replace(
+            'src/'
+            . str_replace('\\', DIRECTORY_SEPARATOR, __CLASS__)
+            . '.php',
+            '',
+            __FILE__
+        ) . 'templates';
 
         if ($this->options->has('templatePath')) {
             $templatePath = $this->options->get('templatePath');
@@ -88,11 +102,13 @@ class Project extends AbstractComponent
         $this->currentType = $this->options->get('type');
 
         if (!isset($this->types[$this->currentType])) {
-            throw new BuilderException(sprintf(
-                'Type "%s" is not a valid type. Choose among [%s] ',
-                $this->currentType,
-                implode(', ', array_keys($this->types))
-            ));
+            throw new BuilderException(
+                sprintf(
+                    'Type "%s" is not a valid type. Choose among [%s] ',
+                    $this->currentType,
+                    implode(', ', array_keys($this->types))
+                )
+            );
         }
 
         $builderClass = $this->types[$this->currentType];
@@ -102,33 +118,41 @@ class Project extends AbstractComponent
         }
 
         if (!$this->force && file_exists($this->path->getRootPath())) {
-            throw new BuilderException(sprintf('Directory %s already exists.', $this->path->getRootPath()));
+            throw new BuilderException(
+                sprintf('Directory %s already exists.', $this->path->getRootPath())
+            );
         }
 
         if (
             !mkdir($concurrentDirectory = $this->path->getRootPath(), 0777, true)
             && !is_dir($concurrentDirectory)
         ) {
-            throw new BuilderException(sprintf('Unable create project directory %s', $this->path->getRootPath()));
+            throw new BuilderException(
+                sprintf('Unable create project directory %s', $this->path->getRootPath())
+            );
         }
 
         if (!is_writable($this->path->getRootPath())) {
-            throw new BuilderException(sprintf('Directory %s is not writable.', $this->path->getRootPath()));
+            throw new BuilderException(
+                sprintf('Directory %s is not writable.', $this->path->getRootPath())
+            );
         }
 
         $this->options->offsetSet('templatePath', $templatePath);
         $this->options->offsetSet('projectPath', $this->path->getRootPath());
 
-        /** @var ProjectBuilder $builder */
+        /** @var AbstractProjectBuilder $builder */
         $builder = new $builderClass($this->options);
         $success = $builder->build();
 
-        $root = new SplFileInfo($this->path->getRootPath('public'));
+        $root    = new SplFileInfo($this->path->getRootPath('public'));
         $fsUtils = new FsUtils();
         $fsUtils->setDirectoryPermission($root, ['css' => 0777, 'js' => 0777]);
 
         if ($success === true) {
-            $this->notifySuccess(sprintf("Project '%s' was successfully created.", $this->options->get('name')));
+            $this->notifySuccess(
+                sprintf("Project '%s' was successfully created.", $this->options->get('name'))
+            );
             $this->notifyInfo("Please choose a password and username to use Database connection.");
             $this->notifyInfo("Used default: 'root' without password.");
         }

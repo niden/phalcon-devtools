@@ -1,7 +1,5 @@
 <?php
 
-declare(strict_types=1);
-
 /**
  * This file is part of the Phalcon Developer Tools.
  *
@@ -11,26 +9,30 @@ declare(strict_types=1);
  * the LICENSE file that was distributed with this source code.
  */
 
+declare(strict_types=1);
+
 namespace Phalcon\DevTools\Access;
 
 use Phalcon\Di\Injectable;
 use Phalcon\Events\Event;
-use Phalcon\Mvc\Dispatcher;
 use Phalcon\Events\ManagerInterface;
+use Phalcon\Mvc\Dispatcher;
+
+use function sprintf;
 
 /**
  * @property ManagerInterface $eventsManager
  */
 class Manager extends Injectable
 {
-    const EXCEPTION_ACTION_DISALLOWED = 10;
+    public const EXCEPTION_ACTION_DISALLOWED = 10;
 
     /**
      * The access policy instance.
      *
      * @var PolicyInterface
      */
-    protected $policy;
+    protected PolicyInterface $policy;
 
     /**
      * Manager constructor.
@@ -45,9 +47,9 @@ class Manager extends Injectable
     /**
      * This action is executed before execute any action in the application.
      *
-     * @param Event $event Event object.
+     * @param Event      $event      Event object.
      * @param Dispatcher $dispatcher Dispatcher object.
-     * @param array $data Data.
+     * @param array      $data       Data.
      *
      * @return mixed
      */
@@ -73,7 +75,8 @@ class Manager extends Injectable
      * Checks whether a user is allowed to access an resource.
      *
      * @param string $resourceName Resource name.
-     * @param array $data Data. [Optional]
+     * @param array  $data         Data. [Optional]
+     *
      * @return bool
      */
     public function isAllowedAccess(string $resourceName, array $data = null): bool

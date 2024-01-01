@@ -1,7 +1,5 @@
 <?php
 
-declare(strict_types=1);
-
 /**
  * This file is part of the Phalcon Developer Tools.
  *
@@ -11,11 +9,15 @@ declare(strict_types=1);
  * the LICENSE file that was distributed with this source code.
  */
 
+declare(strict_types=1);
+
 namespace Phalcon\DevTools\Validation\Validator;
 
+use Phalcon\Filter\Validation;
+use Phalcon\Filter\Validation\AbstractValidator;
 use Phalcon\Messages\Message;
-use Phalcon\Validation;
-use Phalcon\Validation\AbstractValidator;
+
+use function preg_match;
 
 /**
  * Check for namespace
@@ -35,7 +37,7 @@ class Namespaces extends AbstractValidator
      * Executes the namespaces validation
      *
      * @param Validation $validation
-     * @param string $field
+     * @param string     $field
      *
      * @return bool
      */
@@ -50,9 +52,9 @@ class Namespaces extends AbstractValidator
         $re = '#^(?:(?:\\\)?[a-z](?:[a-z0-9_]+)?)+(?:\\\\(?:[a-z](?:[a-z0-9_]+)?)+)*$#i';
 
         if (!preg_match($re, $value)) {
-            $label = $this->getOption('label') ?: $validation->getLabel($field);
-            $message = $this->getOption('message') ?: 'Invalid namespace syntax!';
-            $replacePairs = array(':field' => $label);
+            $label        = $this->getOption('label') ?: $validation->getLabel($field);
+            $message      = $this->getOption('message') ?: 'Invalid namespace syntax!';
+            $replacePairs = [':field' => $label];
 
             $validation->appendMessage(new Message(strtr($message, $replacePairs), $field, 'Namespaces'));
             return false;

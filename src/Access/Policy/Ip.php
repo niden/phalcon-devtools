@@ -1,7 +1,5 @@
 <?php
 
-declare(strict_types=1);
-
 /**
  * This file is part of the Phalcon Developer Tools.
  *
@@ -11,11 +9,16 @@ declare(strict_types=1);
  * the LICENSE file that was distributed with this source code.
  */
 
+declare(strict_types=1);
+
 namespace Phalcon\DevTools\Access\Policy;
 
 use Phalcon\DevTools\Access\PolicyInterface;
 use Phalcon\Di\Injectable;
 use Phalcon\Http\RequestInterface;
+
+use function strpos;
+use function trim;
 
 /**
  * @property RequestInterface $request
@@ -27,7 +30,7 @@ class Ip extends Injectable implements PolicyInterface
      *
      * @var string
      */
-    protected $allowedIp;
+    protected string $allowedIp;
 
     /**
      * Ip constructor.
@@ -43,7 +46,8 @@ class Ip extends Injectable implements PolicyInterface
      * {@inheritdoc}
      *
      * @param string $resourceName Resource name.
-     * @param array $data Data. [Optional]
+     * @param array  $data         Data. [Optional]
+     *
      * @return bool
      */
     public function isAllowedAccess(string $resourceName, array $data = null): bool
@@ -62,6 +66,7 @@ class Ip extends Injectable implements PolicyInterface
      * the given
      *
      * @param string $ip
+     *
      * @return bool
      */
     protected function checkIp(string $ip): bool

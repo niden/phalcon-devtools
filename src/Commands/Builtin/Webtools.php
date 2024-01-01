@@ -1,7 +1,5 @@
 <?php
 
-declare(strict_types=1);
-
 /**
  * This file is part of the Phalcon Developer Tools.
  *
@@ -11,13 +9,19 @@ declare(strict_types=1);
  * the LICENSE file that was distributed with this source code.
  */
 
+declare(strict_types=1);
+
 namespace Phalcon\DevTools\Commands\Builtin;
 
+use Exception;
 use Phalcon\DevTools\Commands\Command;
 use Phalcon\DevTools\Commands\CommandsException;
 use Phalcon\DevTools\Script\Color;
 use Phalcon\DevTools\Web\Tools;
-use Phalcon\Exception;
+
+use function file_exists;
+
+use const PHP_EOL;
 
 /**
  * Webtools Command
@@ -26,53 +30,6 @@ use Phalcon\Exception;
  */
 class Webtools extends Command
 {
-    /**
-     * {@inheritdoc}
-     *
-     * @return array
-     */
-    public function getPossibleParams(): array
-    {
-        return [
-            'action=s' => 'Enables/Disables webtools in a project [enable|disable]',
-            'help'     => 'Shows this help [optional]',
-        ];
-    }
-
-    /**
-     * {@inheritdoc}
-     *
-     * @param array $parameters
-     * @throws CommandsException
-     * @throws Exception
-     * @throws \Exception
-     */
-    public function run(array $parameters): void
-    {
-        $action = $this->getOption(['action', 1]);
-        $directory = './';
-
-        if ($action == 'enable') {
-            if (file_exists($directory . 'public/webtools.php')) {
-                throw new CommandsException('Webtools are already enabled!');
-            }
-
-            Tools::install($directory);
-
-            echo Color::success('Webtools successfully enabled!');
-        } elseif ($action == 'disable') {
-            if (!file_exists($directory . 'public/webtools.php')) {
-                throw new CommandsException('Webtools are already disabled!');
-            }
-
-            Tools::uninstall($directory);
-
-            echo Color::success('Webtools successfully disabled!');
-        } else {
-            throw new CommandsException('Invalid action!');
-        }
-    }
-
     /**
      * {@inheritdoc}
      *
@@ -109,10 +66,58 @@ class Webtools extends Command
     /**
      * {@inheritdoc}
      *
+     * @return array
+     */
+    public function getPossibleParams(): array
+    {
+        return [
+            'action=s' => 'Enables/Disables webtools in a project [enable|disable]',
+            'help'     => 'Shows this help [optional]',
+        ];
+    }
+
+    /**
+     * {@inheritdoc}
+     *
      * @return int
      */
     public function getRequiredParams(): int
     {
         return 1;
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @param array $parameters
+     *
+     * @throws CommandsException
+     * @throws Exception
+     * @throws Exception
+     */
+    public function run(array $parameters): void
+    {
+        $action    = $this->getOption(['action', 1]);
+        $directory = './';
+
+        if ($action == 'enable') {
+            if (file_exists($directory . 'public/webtools.php')) {
+                throw new CommandsException('Webtools are already enabled!');
+            }
+
+            Tools::install($directory);
+
+            echo Color::success('Webtools successfully enabled!');
+        } elseif ($action == 'disable') {
+            if (!file_exists($directory . 'public/webtools.php')) {
+                throw new CommandsException('Webtools are already disabled!');
+            }
+
+            Tools::uninstall($directory);
+
+            echo Color::success('Webtools successfully disabled!');
+        } else {
+            throw new CommandsException('Invalid action!');
+        }
     }
 }

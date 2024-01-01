@@ -1,7 +1,5 @@
 <?php
 
-declare(strict_types=1);
-
 /**
  * This file is part of the Phalcon Developer Tools.
  *
@@ -11,9 +9,11 @@ declare(strict_types=1);
  * the LICENSE file that was distributed with this source code.
  */
 
+declare(strict_types=1);
+
 namespace Phalcon\DevTools\Utils;
 
-use Phalcon\Config;
+use Phalcon\Config\Config;
 use Phalcon\Di\Injectable;
 
 /**
@@ -24,8 +24,9 @@ class DbUtils extends Injectable
     /**
      * List database tables
      *
-     * @param  bool   $all
-     * @param  string $connection
+     * @param bool   $all
+     * @param string $connection
+     *
      * @return array
      */
     public function listTables(bool $all = false, $connection = 'db'): array

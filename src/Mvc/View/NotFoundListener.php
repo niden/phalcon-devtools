@@ -1,7 +1,5 @@
 <?php
 
-declare(strict_types=1);
-
 /**
  * This file is part of the Phalcon Developer Tools.
  *
@@ -11,6 +9,8 @@ declare(strict_types=1);
  * the LICENSE file that was distributed with this source code.
  */
 
+declare(strict_types=1);
+
 namespace Phalcon\DevTools\Mvc\View;
 
 use Exception;
@@ -18,6 +18,10 @@ use Phalcon\Di\Injectable;
 use Phalcon\Events\Event;
 use Phalcon\Mvc\ViewInterface;
 use Psr\Log\LoggerInterface;
+
+use function implode;
+use function is_array;
+use function sprintf;
 
 /**
  * @property LoggerInterface $logger
@@ -27,9 +31,9 @@ class NotFoundListener extends Injectable
     /**
      * Notify about not found views.
      *
-     * @param Event $event
+     * @param Event         $event
      * @param ViewInterface $view
-     * @param mixed $viewEnginePath
+     * @param mixed         $viewEnginePath
      *
      * @throws Exception
      */
@@ -41,7 +45,7 @@ class NotFoundListener extends Injectable
 
         $message = sprintf(
             'View was not found in any of the views directory. Active render paths: [%s]',
-            ($viewEnginePath ? join(', ', $viewEnginePath) : gettype($viewEnginePath))
+            ($viewEnginePath ? implode(', ', $viewEnginePath) : gettype($viewEnginePath))
         );
 
         $this->logger->error($message);

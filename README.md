@@ -21,8 +21,8 @@ with Phalcon framework.
 
 ## Requirements
 
-* PHP >= 7.2
-* Phalcon >= 4.0.0
+* PHP >= 8.0
+* Phalcon >= 5.5.0
 
 ## Installing via Composer
 
@@ -37,20 +37,11 @@ Create the composer.json file as follows:
 ```json
 {
     "require-dev": {
-        "phalcon/devtools": "~4.1"
+        "phalcon/devtools": "~5.0"
     }
 }
 ```
 
-If you are still using Phalcon 3.4.x, create a `composer.json` with the following instead:
-
-```json
-{
-    "require-dev": {
-        "phalcon/devtools": "^3.4"
-    }
-}
-```
 
 Run the composer installer:
 
@@ -174,10 +165,10 @@ And then you can use `phalcon migration run` or `phalcon controller SomeClass` a
 
 ## License
 
-Phalcon Developer Tools is open source software licensed under the [New BSD License][:license:].<br>
+Phalcon Developer Tools is open source software licensed under the [MIT License][:license:].<br>
 © Phalcon Framework Team and contributors
 
 [:packagist:]: https://packagist.org/packages/phalcon/devtools
 [:devtools:]: https://github.com/phalcon/phalcon-devtools
-[:license:]: https://github.com/phalcon/phalcon-devtools/blob/master/LICENSE.txt
+[:license:]: https://github.com/phalcon/phalcon-devtools/blob/master/LICENSE
 [:travis:]: https://travis-ci.org/phalcon/phalcon-devtools

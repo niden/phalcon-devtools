@@ -35,4 +35,13 @@ COPY --from=composer /usr/bin/composer /usr/local/bin/composer
 # Bash script with helper aliases
 COPY ./.bashrc /root/.bashrc
 
-CMD ["php-fpm"]
+# Editing www.conf
+RUN echo "#!/bin/sh\nexit 0" > /usr/sbin/policy-rc.d \
+    && sed -i -e "s/^;clear_env = no$/clear_env = no/" /usr/local/etc/php-fpm.d/www.conf \
+    && sed -i -e "/listen = .*/c\listen = [::]:8000" /usr/local/etc/php-fpm.d/www.conf
+
+WORKDIR /app
+
+EXPOSE 8000
+
+CMD ["php-fpm", "--nodaemonize", "--fpm-config=/usr/local/etc/php-fpm.d/www.conf"]

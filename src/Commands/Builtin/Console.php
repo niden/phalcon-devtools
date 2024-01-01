@@ -1,7 +1,5 @@
 <?php
 
-declare(strict_types=1);
-
 /**
  * This file is part of the Phalcon Developer Tools.
  *
@@ -11,12 +9,18 @@ declare(strict_types=1);
  * the LICENSE file that was distributed with this source code.
  */
 
+declare(strict_types=1);
+
 namespace Phalcon\DevTools\Commands\Builtin;
 
 use Phalcon\DevTools\Commands\Command;
 use Phalcon\DevTools\Script\Color;
 use Psy\Configuration;
 use Psy\Shell;
+
+use function substr;
+
+use const PHP_EOL;
 
 /**
  * Console Command
@@ -26,34 +30,11 @@ class Console extends Command
     /**
      * {@inheritdoc}
      *
-     * @return array
+     * @return boolean
      */
-    public function getPossibleParams(): array
+    public function canBeExternal(): bool
     {
-        return [
-            'include=s' => 'Script to include [optional]',
-            'help' => 'Shows this help [optional]',
-        ];
-    }
-
-    /**
-     * {@inheritdoc}
-     *
-     * @param array $parameters
-     * @return mixed
-     */
-    public function run(array $parameters)
-    {
-        $config = new Configuration();
-        $shell = new Shell($config);
-
-        if ($this->isReceivedOption('include')) {
-            $shell->setIncludes([substr($this->getOption('include'), 2)]);
-        }
-
-        $shell->run();
-
-        return 0;
+        return true;
     }
 
     /**
@@ -64,16 +45,6 @@ class Console extends Command
     public function getCommands(): array
     {
         return ['console', 'shell', 'psysh'];
-    }
-
-    /**
-     * {@inheritdoc}
-     *
-     * @return boolean
-     */
-    public function canBeExternal(): bool
-    {
-        return true;
     }
 
     /**
@@ -91,10 +62,44 @@ class Console extends Command
     /**
      * {@inheritdoc}
      *
+     * @return array
+     */
+    public function getPossibleParams(): array
+    {
+        return [
+            'include=s' => 'Script to include [optional]',
+            'help'      => 'Shows this help [optional]',
+        ];
+    }
+
+    /**
+     * {@inheritdoc}
+     *
      * @return integer
      */
     public function getRequiredParams(): int
     {
+        return 0;
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @param array $parameters
+     *
+     * @return mixed
+     */
+    public function run(array $parameters)
+    {
+        $config = new Configuration();
+        $shell  = new Shell($config);
+
+        if ($this->isReceivedOption('include')) {
+            $shell->setIncludes([substr($this->getOption('include'), 2)]);
+        }
+
+        $shell->run();
+
         return 0;
     }
 }

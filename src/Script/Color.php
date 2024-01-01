@@ -1,7 +1,5 @@
 <?php
 
-declare(strict_types=1);
-
 /**
  * This file is part of the Phalcon Developer Tools.
  *
@@ -11,53 +9,91 @@ declare(strict_types=1);
  * the LICENSE file that was distributed with this source code.
  */
 
+declare(strict_types=1);
+
 namespace Phalcon\DevTools\Script;
+
+use function defined;
+use function function_exists;
+use function getenv;
+use function posix_isatty;
+use function str_pad;
+use function strlen;
+use function strtoupper;
+use function substr;
+
+use const PHP_EOL;
+use const PHP_OS;
 
 /**
  * Allows to generate messages using colors on xterm, ddterm, linux, etc.
  */
 final class Color
 {
-    const FG_BLACK = 1;
-    const FG_DARK_GRAY = 2;
-    const FG_BLUE = 3;
-    const FG_LIGHT_BLUE = 4;
-    const FG_GREEN = 5;
-    const FG_LIGHT_GREEN = 6;
-    const FG_CYAN = 7;
-    const FG_LIGHT_CYAN = 8;
-    const FG_RED = 9;
-    const FG_LIGHT_RED = 10;
-    const FG_PURPLE = 11;
-    const FG_LIGHT_PURPLE = 12;
-    const FG_BROWN = 13;
-    const FG_YELLOW = 14;
-    const FG_LIGHT_GRAY = 15;
-    const FG_WHITE = 16;
-
-    const BG_BLACK = 1;
-    const BG_RED = 2;
-    const BG_GREEN = 3;
-    const BG_YELLOW = 4;
-    const BG_BLUE = 5;
-    const BG_MAGENTA = 6;
-    const BG_CYAN = 7;
-    const BG_LIGHT_GRAY = 8;
-
-    const AT_NORMAL = 1;
-    const AT_BOLD = 2;
-    const AT_ITALIC = 3;
-    const AT_UNDERLINE = 4;
-    const AT_BLINK = 5;
-    const AT_OUTLINE = 6;
-    const AT_REVERSE = 7;
-    const AT_NONDISP = 8;
-    const AT_STRIKE = 9;
-
+    public const AT_BLINK     = 5;
+    public const AT_BOLD      = 2;
+    public const AT_ITALIC    = 3;
+    public const AT_NONDISP   = 8;
+    public const AT_NORMAL    = 1;
+    public const AT_OUTLINE   = 6;
+    public const AT_REVERSE   = 7;
+    public const AT_STRIKE    = 9;
+    public const AT_UNDERLINE = 4;
+    public const BG_BLACK      = 1;
+    public const BG_BLUE       = 5;
+    public const BG_CYAN       = 7;
+    public const BG_GREEN      = 3;
+    public const BG_LIGHT_GRAY = 8;
+    public const BG_MAGENTA    = 6;
+    public const BG_RED        = 2;
+    public const BG_YELLOW     = 4;
+    public const FG_BLACK        = 1;
+    public const FG_BLUE         = 3;
+    public const FG_BROWN        = 13;
+    public const FG_CYAN         = 7;
+    public const FG_DARK_GRAY    = 2;
+    public const FG_GREEN        = 5;
+    public const FG_LIGHT_BLUE   = 4;
+    public const FG_LIGHT_CYAN   = 8;
+    public const FG_LIGHT_GRAY   = 15;
+    public const FG_LIGHT_GREEN  = 6;
+    public const FG_LIGHT_PURPLE = 12;
+    public const FG_LIGHT_RED    = 10;
+    public const FG_PURPLE       = 11;
+    public const FG_RED          = 9;
+    public const FG_WHITE        = 16;
+    public const FG_YELLOW       = 14;
+    /**
+     * @var array Map of supported attributes
+     */
+    private static $at = [
+        self::AT_NORMAL    => '0',
+        self::AT_BOLD      => '1',
+        self::AT_ITALIC    => '3',
+        self::AT_UNDERLINE => '4',
+        self::AT_BLINK     => '5',
+        self::AT_OUTLINE   => '6',
+        self::AT_REVERSE   => '7',
+        self::AT_NONDISP   => '8',
+        self::AT_STRIKE    => '9',
+    ];
+    /**
+     * @var array Map of supported background colors
+     */
+    private static $bg = [
+        self::BG_BLACK      => '40',
+        self::BG_RED        => '41',
+        self::BG_GREEN      => '42',
+        self::BG_YELLOW     => '43',
+        self::BG_BLUE       => '44',
+        self::BG_MAGENTA    => '45',
+        self::BG_CYAN       => '46',
+        self::BG_LIGHT_GRAY => '47',
+    ];
     /**
      * @var array Map of supported foreground colors
      */
-    private static $fg = array(
+    private static $fg = [
         self::FG_BLACK        => '0;30',
         self::FG_DARK_GRAY    => '1;30',
         self::FG_RED          => '0;31',
@@ -74,56 +110,14 @@ final class Color
         self::FG_LIGHT_CYAN   => '1;36',
         self::FG_LIGHT_GRAY   => '0;37',
         self::FG_WHITE        => '1;37',
-    );
-
-    /**
-     * @var array Map of supported background colors
-     */
-    private static $bg = array(
-        self::BG_BLACK      => '40',
-        self::BG_RED        => '41',
-        self::BG_GREEN      => '42',
-        self::BG_YELLOW     => '43',
-        self::BG_BLUE       => '44',
-        self::BG_MAGENTA    => '45',
-        self::BG_CYAN       => '46',
-        self::BG_LIGHT_GRAY => '47',
-    );
-
-    /**
-     * @var array Map of supported attributes
-     */
-    private static $at = array(
-        self::AT_NORMAL    => '0',
-        self::AT_BOLD      => '1',
-        self::AT_ITALIC    => '3',
-        self::AT_UNDERLINE => '4',
-        self::AT_BLINK     => '5',
-        self::AT_OUTLINE   => '6',
-        self::AT_REVERSE   => '7',
-        self::AT_NONDISP   => '8',
-        self::AT_STRIKE    => '9',
-    );
-
-    /**
-     * Identify if console supports colors
-     *
-     * @return bool
-     */
-    public static function isSupportedShell(): bool
-    {
-        if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
-            return false !== getenv('ANSICON') || 'ON' === getenv('ConEmuANSI') || 'xterm' === getenv('TERM');
-        }
-
-        return defined('STDOUT') && function_exists('posix_isatty') && posix_isatty(STDOUT);
-    }
+    ];
 
     /**
      * Colorizes the string using provided colors.
      *
      * @static
-     * @param string $string
+     *
+     * @param string       $string
      * @param null|integer $fg
      * @param null|integer $at
      * @param null|integer $bg
@@ -155,9 +149,29 @@ final class Color
         }
 
         // Add string and end coloring
-        $colored .=  $string . "\033[0m";
+        $colored .= $string . "\033[0m";
 
         return $colored;
+    }
+
+    /**
+     * Color style for error messages.
+     *
+     * @static
+     *
+     * @param string $msg
+     *
+     * @return string
+     */
+    public static function error(string $msg): string
+    {
+        $msg   = 'Error: ' . $msg;
+        $space = strlen($msg) + 4;
+        $out   = static::colorize(str_pad(' ', $space), Color::FG_WHITE, Color::AT_BOLD, Color::BG_RED) . PHP_EOL;
+        $out   .= static::colorize('  ' . $msg . '  ', Color::FG_WHITE, Color::AT_BOLD, Color::BG_RED) . PHP_EOL;
+        $out   .= static::colorize(str_pad(' ', $space), Color::FG_WHITE, Color::AT_BOLD, Color::BG_RED) . PHP_EOL;
+
+        return $out;
     }
 
     public static function head(string $msg): string
@@ -166,55 +180,55 @@ final class Color
     }
 
     /**
-     * Color style for error messages.
+     * Color style for info messages.
      *
      * @static
+     *
      * @param string $msg
+     *
      * @return string
      */
-    public static function error(string $msg): string
+    public static function info(string $msg): string
     {
-        $msg = 'Error: ' . $msg;
+        $msg   = 'Info: ' . $msg;
         $space = strlen($msg) + 4;
-        $out  = static::colorize(str_pad(' ', $space), Color::FG_WHITE, Color::AT_BOLD, Color::BG_RED) . PHP_EOL;
-        $out .= static::colorize('  ' . $msg . '  ', Color::FG_WHITE, Color::AT_BOLD, Color::BG_RED) . PHP_EOL;
-        $out .= static::colorize(str_pad(' ', $space), Color::FG_WHITE, Color::AT_BOLD, Color::BG_RED) . PHP_EOL;
+        $out   = static::colorize(str_pad(' ', $space), Color::FG_WHITE, Color::AT_BOLD, Color::BG_BLUE) . PHP_EOL;
+        $out   .= static::colorize('  ' . $msg . '  ', Color::FG_WHITE, Color::AT_BOLD, Color::BG_BLUE) . PHP_EOL;
+        $out   .= static::colorize(str_pad(' ', $space), Color::FG_WHITE, Color::AT_BOLD, Color::BG_BLUE) . PHP_EOL;
 
         return $out;
+    }
+
+    /**
+     * Identify if console supports colors
+     *
+     * @return bool
+     */
+    public static function isSupportedShell(): bool
+    {
+        if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
+            return false !== getenv('ANSICON') || 'ON' === getenv('ConEmuANSI') || 'xterm' === getenv('TERM');
+        }
+
+        return defined('STDOUT') && function_exists('posix_isatty') && posix_isatty(STDOUT);
     }
 
     /**
      * Color style for success messages.
      *
      * @static
+     *
      * @param string $msg
+     *
      * @return string
      */
     public static function success(string $msg): string
     {
-        $msg = 'Success: ' . $msg;
+        $msg   = 'Success: ' . $msg;
         $space = strlen($msg) + 4;
-        $out  = static::colorize(str_pad(' ', $space), Color::FG_WHITE, Color::AT_BOLD, Color::BG_GREEN) . PHP_EOL;
-        $out .= static::colorize('  ' . $msg . '  ', Color::FG_WHITE, Color::AT_BOLD, Color::BG_GREEN) . PHP_EOL;
-        $out .= static::colorize(str_pad(' ', $space), Color::FG_WHITE, Color::AT_BOLD, Color::BG_GREEN) . PHP_EOL;
-
-        return $out;
-    }
-
-    /**
-     * Color style for info messages.
-     *
-     * @static
-     * @param string $msg
-     * @return string
-     */
-    public static function info(string $msg): string
-    {
-        $msg = 'Info: ' . $msg;
-        $space = strlen($msg) + 4;
-        $out  = static::colorize(str_pad(' ', $space), Color::FG_WHITE, Color::AT_BOLD, Color::BG_BLUE) . PHP_EOL;
-        $out .= static::colorize('  ' . $msg . '  ', Color::FG_WHITE, Color::AT_BOLD, Color::BG_BLUE) . PHP_EOL;
-        $out .= static::colorize(str_pad(' ', $space), Color::FG_WHITE, Color::AT_BOLD, Color::BG_BLUE) . PHP_EOL;
+        $out   = static::colorize(str_pad(' ', $space), Color::FG_WHITE, Color::AT_BOLD, Color::BG_GREEN) . PHP_EOL;
+        $out   .= static::colorize('  ' . $msg . '  ', Color::FG_WHITE, Color::AT_BOLD, Color::BG_GREEN) . PHP_EOL;
+        $out   .= static::colorize(str_pad(' ', $space), Color::FG_WHITE, Color::AT_BOLD, Color::BG_GREEN) . PHP_EOL;
 
         return $out;
     }

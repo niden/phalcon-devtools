@@ -1,7 +1,5 @@
 <?php
 
-declare(strict_types=1);
-
 /**
  * This file is part of the Phalcon Developer Tools.
  *
@@ -11,9 +9,18 @@ declare(strict_types=1);
  * the LICENSE file that was distributed with this source code.
  */
 
+declare(strict_types=1);
+
 namespace Phalcon\DevTools\Commands;
 
 use Phalcon\Events\Event;
+
+use function file_exists;
+use function in_array;
+use function is_dir;
+use function realpath;
+
+use const DIRECTORY_SEPARATOR;
 
 /**
  * Commands Listener
@@ -23,7 +30,7 @@ class CommandsListener
     /**
      * Before command executing
      *
-     * @param Event $event
+     * @param Event   $event
      * @param Command $command
      *
      * @return bool

@@ -1,7 +1,5 @@
 <?php
 
-declare(strict_types=1);
-
 /**
  * This file is part of the Phalcon Developer Tools.
  *
@@ -10,6 +8,8 @@ declare(strict_types=1);
  * For the full copyright and license information, please view
  * the LICENSE file that was distributed with this source code.
  */
+
+declare(strict_types=1);
 
 namespace Phalcon\DevTools\Mvc\Controller;
 
@@ -20,27 +20,29 @@ use Phalcon\DevTools\Resources\AssetsResource;
 use Phalcon\DevTools\Version;
 
 /**
- * @property Manager $assets
+ * @property Manager        $assets
  * @property AssetsResource $resource
  */
 trait CodemirrorTrait
 {
     protected function registerResources()
     {
+        $version = new Version();
         $this->assets
             ->collection('custom_css')
             ->setTargetPath('css/codemirror.css')
-            ->setTargetUri('css/codemirror.css?v=' . Version::get())
+            ->setTargetUri('css/codemirror.css?v=' . $version->get())
             ->addCss($this->resource->path('codemirror/theme/ambiance.css'))
             ->addCss($this->resource->path('codemirror/lib/codemirror.css'))
             ->addCss($this->resource->path('codemirror/lib/codephalcon.css'))
             ->join(true)
-            ->addFilter(new Cssmin());
+            ->addFilter(new Cssmin())
+        ;
 
         $this->assets
             ->collection('codemirror')
             ->setTargetPath('js/codemirror.js')
-            ->setTargetUri('js/codemirror.js?v=' . Version::get())
+            ->setTargetUri('js/codemirror.js?v=' . $version->get())
             ->addJs($this->resource->path('codemirror/lib/codemirror.js'))
             ->addJs($this->resource->path('codemirror/addon/edit/matchbrackets.js'))
             ->addJs($this->resource->path('codemirror/addon/selection/active-line.js'))
@@ -51,6 +53,7 @@ trait CodemirrorTrait
             ->addJs($this->resource->path('codemirror/mode/php/php.js'))
             ->addJs($this->resource->path('codemirror/lib/codephalcon.js'))
             ->join(true)
-            ->addFilter(new Jsmin());
+            ->addFilter(new Jsmin())
+        ;
     }
 }

@@ -1,7 +1,5 @@
 <?php
 
-declare(strict_types=1);
-
 /**
  * This file is part of the Phalcon Developer Tools.
  *
@@ -10,6 +8,8 @@ declare(strict_types=1);
  * For the full copyright and license information, please view
  * the LICENSE file that was distributed with this source code.
  */
+
+declare(strict_types=1);
 
 namespace Phalcon\DevTools;
 
@@ -21,54 +21,39 @@ use Phalcon\DevTools\Script\Color;
 use Phalcon\DevTools\Script\ScriptException;
 use Phalcon\Events\Manager as EventsManager;
 
+use function class_exists;
+use function explode;
+use function file_exists;
+use function implode;
+use function in_array;
+use function is_dir;
+use function parse_ini_file;
+use function preg_replace;
+use function soundex;
+use function sprintf;
+use function strtolower;
+use function trim;
+
 /**
  * Component that allows you to write scripts to use CLI.
  */
 class Script
 {
     /**
-     * Events Manager
-     *
-     * @var EventsManager
-     */
-    protected $eventsManager;
-
-    /**
      * Commands attached to the Script
      *
      * @var Command[]
      */
-    protected $commands;
+    protected $commands = [];
 
     /**
      * Script Constructor
      *
      * @param EventsManager $eventsManager
      */
-    public function __construct(EventsManager $eventsManager)
-    {
-        $this->commands = [];
-        $this->eventsManager = $eventsManager;
-    }
-
-    /**
-     * Events Manager
-     *
-     * @param EventsManager $eventsManager
-     */
-    public function setEventsManager(EventsManager $eventsManager)
-    {
-        $this->eventsManager = $eventsManager;
-    }
-
-    /**
-     * Returns the events manager
-     *
-     * @return EventsManager
-     */
-    public function getEventsManager()
-    {
-        return $this->eventsManager;
+    public function __construct(
+        protected EventsManager $eventsManager
+    ) {
     }
 
     /**
@@ -82,19 +67,10 @@ class Script
     }
 
     /**
-     * Returns the commands registered in the script
-     *
-     * @return Command[]
-     */
-    public function getCommands(): array
-    {
-        return $this->commands;
-    }
-
-    /**
      * Dispatch the Command
      *
      * @param Command $command
+     *
      * @return bool
      */
     public function dispatch(Command $command): bool
@@ -119,6 +95,68 @@ class Script
         $this->eventsManager->fire('command:afterCommand', $command);
 
         return $return;
+    }
+
+    /**
+     * Returns the commands registered in the script
+     *
+     * @return Command[]
+     */
+    public function getCommands(): array
+    {
+        return $this->commands;
+    }
+
+    /**
+     * Returns the events manager
+     *
+     * @return EventsManager
+     */
+    public function getEventsManager()
+    {
+        return $this->eventsManager;
+    }
+
+    public function loadUserScripts(): void
+    {
+        if (!file_exists('.phalcon/project.ini')) {
+            return;
+        }
+
+        $config = parse_ini_file('.phalcon/project.ini');
+
+        if (!isset($config['scripts'])) {
+            return;
+        }
+
+        foreach (explode(',', $config['scripts']) as $directory) {
+            if (!is_dir($directory)) {
+                throw new ScriptException("Cannot load user scripts in directory '" . $directory . "'");
+            }
+
+            $iterator = new DirectoryIterator($directory);
+            foreach ($iterator as $item) {
+                if ($item->isDir() || $item->isDot()) {
+                    continue;
+                }
+
+                /** @noinspection PhpIncludeInspection */
+                require $item->getPathname();
+
+                $className = preg_replace('/\.php$/', '', $item->getBasename());
+                if (!class_exists($className)) {
+                    throw new ScriptException(
+                        sprintf(
+                            "Expecting class '%s' to be located at '%s'",
+                            $className,
+                            $item->getPathname()
+                        )
+                    );
+                }
+
+                $this->attach(new $className($this, $this->eventsManager));
+            }
+        }
     }
 
     /**
@@ -169,51 +207,19 @@ class Script
         $message = sprintf('%s is not a recognized command.', $input);
 
         if (isset($available[$soundex])) {
-            throw new ScriptException(sprintf('%s Did you mean: %s?', $message, join(' or ', $available[$soundex])));
+            throw new ScriptException(sprintf('%s Did you mean: %s?', $message, implode(' or ', $available[$soundex])));
         }
 
         throw new ScriptException($message);
     }
 
-    public function loadUserScripts(): void
+    /**
+     * Events Manager
+     *
+     * @param EventsManager $eventsManager
+     */
+    public function setEventsManager(EventsManager $eventsManager)
     {
-        if (!file_exists('.phalcon/project.ini')) {
-            return;
-        }
-
-        $config = parse_ini_file('.phalcon/project.ini');
-
-        if (!isset($config['scripts'])) {
-            return;
-        }
-
-        foreach (explode(',', $config['scripts']) as $directory) {
-            if (!is_dir($directory)) {
-                throw new ScriptException("Cannot load user scripts in directory '" . $directory . "'");
-            }
-
-            $iterator = new DirectoryIterator($directory);
-            foreach ($iterator as $item) {
-                if ($item->isDir() || $item->isDot()) {
-                    continue;
-                }
-
-                /** @noinspection PhpIncludeInspection */
-                require $item->getPathname();
-
-                $className = preg_replace('/\.php$/', '', $item->getBasename());
-                if (!class_exists($className)) {
-                    throw new ScriptException(
-                        sprintf(
-                            "Expecting class '%s' to be located at '%s'",
-                            $className,
-                            $item->getPathname()
-                        )
-                    );
-                }
-
-                $this->attach(new $className($this, $this->eventsManager));
-            }
-        }
+        $this->eventsManager = $eventsManager;
     }
 }

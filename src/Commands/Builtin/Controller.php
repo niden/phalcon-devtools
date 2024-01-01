@@ -1,7 +1,5 @@
 <?php
 
-declare(strict_types=1);
-
 /**
  * This file is part of the Phalcon Developer Tools.
  *
@@ -11,12 +9,16 @@ declare(strict_types=1);
  * the LICENSE file that was distributed with this source code.
  */
 
+declare(strict_types=1);
+
 namespace Phalcon\DevTools\Commands\Builtin;
 
 use Phalcon\DevTools\Builder\Component\Controller as ControllerBuilder;
 use Phalcon\DevTools\Builder\Exception\BuilderException;
 use Phalcon\DevTools\Commands\Command;
 use Phalcon\DevTools\Script\Color;
+
+use const PHP_EOL;
 
 /**
  * Controller Command
@@ -25,45 +27,6 @@ use Phalcon\DevTools\Script\Color;
  */
 class Controller extends Command
 {
-    /**
-     * {@inheritdoc}
-     *
-     * @return array
-     */
-    public function getPossibleParams(): array
-    {
-        return [
-            'name=s'        => 'Controller name',
-            'namespace=s'   => "Controller's namespace [option]",
-            'directory=s'   => 'Base path on which project is located [optional]',
-            'output=s'      => 'Directory where the controller should be created [optional]',
-            'base-class=s'  => 'Base class to be inherited by the controller [optional]',
-            'force'         => 'Force to rewrite controller [optional]',
-            'help'          => 'Shows this help [optional]',
-        ];
-    }
-
-    /**
-     * {@inheritdoc}
-     *
-     * @param array $parameters
-     * @return mixed
-     * @throws BuilderException
-     */
-    public function run(array $parameters)
-    {
-        $controllerBuilder = new ControllerBuilder([
-            'name' => $this->getOption(['name', 1]),
-            'directory' => $this->getOption('directory'),
-            'controllersDir' => $this->getOption('output'),
-            'namespace' => $this->getOption('namespace'),
-            'baseClass' => $this->getOption('base-class', null, '\\' . \Phalcon\Mvc\Controller::class),
-            'force' => $this->isReceivedOption('force')
-        ]);
-
-        return $controllerBuilder->build();
-    }
-
     /**
      * {@inheritdoc}
      *
@@ -97,10 +60,50 @@ class Controller extends Command
     /**
      * {@inheritdoc}
      *
+     * @return array
+     */
+    public function getPossibleParams(): array
+    {
+        return [
+            'name=s'       => 'Controller name',
+            'namespace=s'  => "Controller's namespace [option]",
+            'directory=s'  => 'Base path on which project is located [optional]',
+            'output=s'     => 'Directory where the controller should be created [optional]',
+            'base-class=s' => 'Base class to be inherited by the controller [optional]',
+            'force'        => 'Force to rewrite controller [optional]',
+            'help'         => 'Shows this help [optional]',
+        ];
+    }
+
+    /**
+     * {@inheritdoc}
+     *
      * @return int
      */
     public function getRequiredParams(): int
     {
         return 1;
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @param array $parameters
+     *
+     * @return mixed
+     * @throws BuilderException
+     */
+    public function run(array $parameters)
+    {
+        $controllerBuilder = new ControllerBuilder([
+            'name'           => $this->getOption(['name', 1]),
+            'directory'      => $this->getOption('directory'),
+            'controllersDir' => $this->getOption('output'),
+            'namespace'      => $this->getOption('namespace'),
+            'baseClass'      => $this->getOption('base-class', null, '\\' . \Phalcon\Mvc\Controller::class),
+            'force'          => $this->isReceivedOption('force'),
+        ]);
+
+        return $controllerBuilder->build();
     }
 }

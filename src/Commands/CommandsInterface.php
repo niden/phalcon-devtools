@@ -1,7 +1,5 @@
 <?php
 
-declare(strict_types=1);
-
 /**
  * This file is part of the Phalcon Developer Tools.
  *
@@ -10,6 +8,8 @@ declare(strict_types=1);
  * For the full copyright and license information, please view
  * the LICENSE file that was distributed with this source code.
  */
+
+declare(strict_types=1);
 
 namespace Phalcon\DevTools\Commands;
 
@@ -21,12 +21,11 @@ namespace Phalcon\DevTools\Commands;
 interface CommandsInterface
 {
     /**
-     * Executes the command.
+     * Checks whether the command can be executed outside a Phalcon project.
      *
-     * @param array $parameters
-     * @return mixed
+     * @return bool
      */
-    public function run(array $parameters);
+    public function canBeExternal(): bool;
 
     /**
      * Returns the command identifier.
@@ -36,18 +35,22 @@ interface CommandsInterface
     public function getCommands(): array;
 
     /**
-     * Checks whether the command can be executed outside a Phalcon project.
-     *
-     * @return bool
-     */
-    public function canBeExternal(): bool;
-
-    /**
      * Prints help on the usage of the command.
      *
      * @return void
      */
     public function getHelp(): void;
+
+    /**
+     * Gets possible command parameters.
+     *
+     * This method returns a list of available parameters for the current command.
+     * The list must be represented as pairs key-value.
+     * Where key is the parameter name and value is the short description.
+     *
+     * @return array
+     */
+    public function getPossibleParams(): array;
 
     /**
      * Return required parameters.
@@ -60,18 +63,17 @@ interface CommandsInterface
      * Checks whether the command has identifier.
      *
      * @param string $identifier
+     *
      * @return bool
      */
     public function hasIdentifier($identifier): bool;
 
     /**
-     * Gets possible command parameters.
+     * Executes the command.
      *
-     * This method returns a list of available parameters for the current command.
-     * The list must be represented as pairs key-value.
-     * Where key is the parameter name and value is the short description.
+     * @param array $parameters
      *
-     * @return array
+     * @return mixed
      */
-    public function getPossibleParams(): array;
+    public function run(array $parameters);
 }

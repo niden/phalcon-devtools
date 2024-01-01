@@ -1,7 +1,5 @@
 <?php
 
-declare(strict_types=1);
-
 /**
  * This file is part of the Phalcon Developer Tools.
  *
@@ -11,14 +9,23 @@ declare(strict_types=1);
  * the LICENSE file that was distributed with this source code.
  */
 
+declare(strict_types=1);
+
 namespace Phalcon\DevTools\Commands\Builtin;
 
-use Phalcon\Config;
 use Phalcon\Config\Adapter\Ini as ConfigIni;
+use Phalcon\Config\Config;
+use Phalcon\Config\Exception as ConfigException;
 use Phalcon\DevTools\Builder\Component\AllModels as AllModelsBuilder;
 use Phalcon\DevTools\Builder\Exception\BuilderException;
 use Phalcon\DevTools\Commands\Command;
 use Phalcon\DevTools\Commands\CommandsException;
+
+use function is_array;
+use function preg_match;
+use function rtrim;
+
+use const DIRECTORY_SEPARATOR;
 
 /**
  * AllModels Command
@@ -27,6 +34,26 @@ use Phalcon\DevTools\Commands\CommandsException;
  */
 class AllModels extends Command
 {
+    /**
+     * {@inheritdoc}
+     *
+     * @return array
+     */
+    public function getCommands(): array
+    {
+        return ['all-models', 'create-all-models'];
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @return void
+     */
+    public function getHelp(): void
+    {
+        $this->printParameters($this->getPossibleParams());
+    }
+
     /**
      * {@inheritdoc}
      *
@@ -57,9 +84,22 @@ class AllModels extends Command
     /**
      * {@inheritdoc}
      *
+     * @return integer
+     */
+    public function getRequiredParams(): int
+    {
+        return 0;
+    }
+
+    /**
+     * {@inheritdoc}
+     *
      * @param array $parameters
-     * @throws CommandsException
+     *
+     * @return void
      * @throws BuilderException
+     * @throws CommandsException
+     * @throws ConfigException
      */
     public function run(array $parameters): void
     {
@@ -105,53 +145,23 @@ class AllModels extends Command
         }
 
         $modelBuilder = new AllModelsBuilder([
-            'force' => $this->isReceivedOption('force'),
-            'config' => $config,
-            'schema' => $this->getOption('schema'),
-            'extends' => $this->getOption('extends'),
-            'namespace' => $this->getOption('namespace'),
-            'directory' => $this->getOption('directory'),
-            'foreignKeys' => $this->isReceivedOption('fk'),
-            'defineRelations' => $this->isReceivedOption('relations'),
+            'force'             => $this->isReceivedOption('force'),
+            'config'            => $config,
+            'schema'            => $this->getOption('schema'),
+            'extends'           => $this->getOption('extends'),
+            'namespace'         => $this->getOption('namespace'),
+            'directory'         => $this->getOption('directory'),
+            'foreignKeys'       => $this->isReceivedOption('fk'),
+            'defineRelations'   => $this->isReceivedOption('relations'),
             'genSettersGetters' => $this->isReceivedOption('get-set'),
-            'genDocMethods' => $this->isReceivedOption('doc'),
-            'modelsDir' => $modelsDir,
-            'mapColumn' => $this->isReceivedOption('mapcolumn'),
-            'abstract' => $this->isReceivedOption('abstract'),
-            'camelize' => $this->isReceivedOption('camelize'),
-            'annotate' => $this->isReceivedOption('annotate'),
+            'genDocMethods'     => $this->isReceivedOption('doc'),
+            'modelsDir'         => $modelsDir,
+            'mapColumn'         => $this->isReceivedOption('mapcolumn'),
+            'abstract'          => $this->isReceivedOption('abstract'),
+            'camelize'          => $this->isReceivedOption('camelize'),
+            'annotate'          => $this->isReceivedOption('annotate'),
         ]);
 
         $modelBuilder->build();
-    }
-
-    /**
-     * {@inheritdoc}
-     *
-     * @return array
-     */
-    public function getCommands(): array
-    {
-        return ['all-models', 'create-all-models'];
-    }
-
-    /**
-     * {@inheritdoc}
-     *
-     * @return void
-     */
-    public function getHelp(): void
-    {
-        $this->printParameters($this->getPossibleParams());
-    }
-
-    /**
-     * {@inheritdoc}
-     *
-     * @return integer
-     */
-    public function getRequiredParams(): int
-    {
-        return 0;
     }
 }

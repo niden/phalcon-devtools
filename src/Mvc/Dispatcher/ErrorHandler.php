@@ -1,7 +1,5 @@
 <?php
 
-declare(strict_types=1);
-
 /**
  * This file is part of the Phalcon Developer Tools.
  *
@@ -10,6 +8,8 @@ declare(strict_types=1);
  * For the full copyright and license information, please view
  * the LICENSE file that was distributed with this source code.
  */
+
+declare(strict_types=1);
 
 namespace Phalcon\DevTools\Mvc\Dispatcher;
 
@@ -25,9 +25,9 @@ class ErrorHandler
     /**
      * Before exception is happening.
      *
-     * @param Event $event Event object.
+     * @param Event      $event      Event object.
      * @param Dispatcher $dispatcher Dispatcher object.
-     * @param Exception $exception Exception object.
+     * @param Exception  $exception  Exception object.
      *
      * @return bool
      * @throws Exception
@@ -52,7 +52,7 @@ class ErrorHandler
 
             $dispatcher->forward([
                 'controller' => 'error',
-                'action' => $action,
+                'action'     => $action,
             ]);
 
             return false;
@@ -64,7 +64,7 @@ class ErrorHandler
 
         $dispatcher->forward([
             'controller' => 'error',
-            'action' => 'route500'
+            'action'     => 'route500',
         ]);
 
         return $event->isStopped();

@@ -1,7 +1,5 @@
 <?php
 
-declare(strict_types=1);
-
 /**
  * This file is part of the Phalcon Developer Tools.
  *
@@ -11,12 +9,18 @@ declare(strict_types=1);
  * the LICENSE file that was distributed with this source code.
  */
 
+declare(strict_types=1);
+
 namespace Phalcon\DevTools\Commands\Builtin;
 
 use Phalcon\DevTools\Builder\Component\Module as ModuleBuilder;
 use Phalcon\DevTools\Builder\Exception\BuilderException;
 use Phalcon\DevTools\Commands\Command;
 use Phalcon\DevTools\Script\Color;
+
+use const DIRECTORY_SEPARATOR;
+use const PHP_EOL;
+use const TEMPLATE_PATH;
 
 /**
  * Module Command
@@ -28,44 +32,11 @@ class Module extends Command
     /**
      * {@inheritdoc}
      *
-     * @return array
+     * @return boolean
      */
-    public function getPossibleParams(): array
+    public function canBeExternal(): bool
     {
-        return [
-            'name'            => 'Name of the new module',
-            'namespace=s'     => "Module's namespace [optional]",
-            'output=s'        => 'Folder where modules are located [optional]',
-            'config-type=s'   => 'The config type to be generated (ini, json, php, yaml) [optional]',
-            'template-path=s' => 'Specify a template path [optional]',
-            'help'            => 'Shows this help [optional]',
-
-        ];
-    }
-
-    /**
-     * {@inheritdoc}
-     *
-     * @param array $parameters
-     * @throws BuilderException
-     */
-    public function run(array $parameters): void
-    {
-        $moduleName   = $this->getOption(['name', 1]);
-        $namespace    = $this->getOption('namespace', null, 'Application');
-        $configType   = $this->getOption('config-type', null, 'php');
-        $modulesDir   = $this->getOption('output');
-        $templatePath = $this->getOption('template-path', null, TEMPLATE_PATH . DIRECTORY_SEPARATOR . 'module');
-
-        $builder = new ModuleBuilder([
-            'name'         => $moduleName,
-            'namespace'    => $namespace,
-            'config-type'  => $configType,
-            'templatePath' => $templatePath,
-            'modulesDir'   => $modulesDir
-        ]);
-
-        $builder->build();
+        return false;
     }
 
     /**
@@ -76,16 +47,6 @@ class Module extends Command
     public function getCommands(): array
     {
         return ['module', 'create-module'];
-    }
-
-    /**
-     * {@inheritdoc}
-     *
-     * @return boolean
-     */
-    public function canBeExternal(): bool
-    {
-        return false;
     }
 
     /**
@@ -107,10 +68,54 @@ class Module extends Command
     /**
      * {@inheritdoc}
      *
+     * @return array
+     */
+    public function getPossibleParams(): array
+    {
+        return [
+            'name'            => 'Name of the new module',
+            'namespace=s'     => "Module's namespace [optional]",
+            'output=s'        => 'Folder where modules are located [optional]',
+            'config-type=s'   => 'The config type to be generated (ini, json, php, yaml) [optional]',
+            'template-path=s' => 'Specify a template path [optional]',
+            'help'            => 'Shows this help [optional]',
+
+        ];
+    }
+
+    /**
+     * {@inheritdoc}
+     *
      * @return int
      */
     public function getRequiredParams(): int
     {
         return 1;
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @param array $parameters
+     *
+     * @throws BuilderException
+     */
+    public function run(array $parameters): void
+    {
+        $moduleName   = $this->getOption(['name', 1]);
+        $namespace    = $this->getOption('namespace', null, 'Application');
+        $configType   = $this->getOption('config-type', null, 'php');
+        $modulesDir   = $this->getOption('output');
+        $templatePath = $this->getOption('template-path', null, TEMPLATE_PATH . DIRECTORY_SEPARATOR . 'module');
+
+        $builder = new ModuleBuilder([
+            'name'         => $moduleName,
+            'namespace'    => $namespace,
+            'config-type'  => $configType,
+            'templatePath' => $templatePath,
+            'modulesDir'   => $modulesDir,
+        ]);
+
+        $builder->build();
     }
 }

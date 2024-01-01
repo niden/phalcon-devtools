@@ -1,7 +1,5 @@
 <?php
 
-declare(strict_types=1);
-
 /**
  * This file is part of the Phalcon Developer Tools.
  *
@@ -11,11 +9,24 @@ declare(strict_types=1);
  * the LICENSE file that was distributed with this source code.
  */
 
+declare(strict_types=1);
+
 namespace Phalcon\DevTools\Builder\Component;
 
 use Phalcon\DevTools\Builder\Exception\BuilderException;
 use Phalcon\DevTools\Utils;
 use SplFileObject;
+
+use function file_exists;
+use function ltrim;
+use function rtrim;
+use function sprintf;
+use function str_replace;
+use function substr;
+use function trim;
+
+use const DIRECTORY_SEPARATOR;
+use const PHP_EOL;
 
 /**
  * Builder to generate controller
@@ -26,6 +37,7 @@ class Controller extends AbstractComponent
      * Create Builder object
      *
      * @param array $options Builder options
+     *
      * @throws BuilderException
      */
     public function __construct(array $options = [])
@@ -44,7 +56,7 @@ class Controller extends AbstractComponent
     /**
      * @throws BuilderException
      */
-    public function build()
+    public function build(): string
     {
         if (!$this->options->has('name')) {
             throw new BuilderException('The controller name is required.');
@@ -63,7 +75,7 @@ class Controller extends AbstractComponent
             $controllersDir = $config->path('application.controllersDir');
         }
 
-        $name = str_replace(' ', '_', $this->options->get('name'));
+        $name      = str_replace(' ', '_', $this->options->get('name'));
         $className = Utils::camelize($name);
 
         // Oops! We are in APP_PATH and try to get controllersDir from outside from project dir
@@ -71,13 +83,17 @@ class Controller extends AbstractComponent
             $controllersDir = ltrim($controllersDir, './');
         }
 
-        $baseClass = $this->options->get('baseClass');
-        $controllerPath = rtrim($controllersDir, '\\/') . DIRECTORY_SEPARATOR . $className . "Controller.php";
+        $baseClass      = $this->options->get('baseClass');
+        $controllerPath = rtrim($controllersDir, '\\/')
+            . DIRECTORY_SEPARATOR
+            . $className . "Controller.php";
 
         $namespace = $this->constructNamespace();
-        $code = "<?php\ndeclare(strict_types=1);\n\n" . $namespace . "class " . $className . "Controller extends " .
-            $baseClass . "\n{\n\n\tpublic function indexAction()\n\t{\n\n\t}\n\n}\n\n";
-        $code = str_replace("\t", "    ", $code);
+        $code      = "<?php\ndeclare(strict_types=1);\n\n"
+            . $namespace . "class "
+            . $className . "Controller extends "
+            . $baseClass . "\n{\n\n\tpublic function indexAction()\n\t{\n\n\t}\n\n}\n\n";
+        $code      = str_replace("\t", "    ", $code);
 
         if (file_exists($controllerPath) && !$this->options->has('force')) {
             throw new BuilderException(sprintf('The Controller %s already exists.', $name));
@@ -105,7 +121,7 @@ class Controller extends AbstractComponent
     protected function constructNamespace(): string
     {
         $namespace = $this->options->has('namespace')
-            ? (string) $this->options->get('namespace') : null;
+            ? (string)$this->options->get('namespace') : null;
 
         if ($namespace === null) {
             return '';

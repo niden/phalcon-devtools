@@ -1,6 +1,4 @@
 <?php
-declare(strict_types=1);
-
 /**
  * This file is part of the Phalcon Developer Tools.
  *
@@ -10,10 +8,23 @@ declare(strict_types=1);
  * the LICENSE file that was distributed with this source code.
  */
 
+declare(strict_types=1);
+
 namespace Phalcon\DevTools\Generator;
 
 use Phalcon\DevTools\Options\OptionsAware as ModelOption;
 use Phalcon\DevTools\Utils;
+
+use function date;
+use function implode;
+use function is_bool;
+use function is_numeric;
+use function join;
+use function rtrim;
+use function sprintf;
+use function str_replace;
+
+use const PHP_EOL;
 
 class Snippet
 {
@@ -67,7 +78,7 @@ EOD;
 %s
     }
 EOD;
-        return PHP_EOL.sprintf($templateValidations, join('', $pieces)).PHP_EOL;
+        return PHP_EOL.sprintf($templateValidations, implode('', $pieces)).PHP_EOL;
     }
 
     /**
@@ -84,11 +95,11 @@ EOD;
     public function getClass(
         string $namespace,
         string $useDefinition,
+        ModelOption $modelOptions,
+        string $content,
         string $classDoc = '',
         string $abstract = '',
-        ModelOption $modelOptions,
         string $extends = '',
-        string $content,
         string $license = ''
     ): string {
         $templateCode = <<<EOD
@@ -100,16 +111,16 @@ EOD;
 }
 EOD;
         return sprintf(
-            $templateCode,
-            $license,
-            $namespace,
-            $useDefinition,
-            $classDoc,
-            $abstract,
-            $modelOptions->getOption('className'),
-            $extends,
-            $content)
-        .PHP_EOL;
+                $templateCode,
+                $license,
+                $namespace,
+                $useDefinition,
+                $classDoc,
+                $abstract,
+                $modelOptions->getOption('className'),
+                $extends,
+                $content)
+            .PHP_EOL;
     }
 
     public function getClassDoc($className, $namespace = '')
@@ -171,13 +182,13 @@ EOD;
 EOD;
 
             return PHP_EOL.sprintf($templateAttributes,
-                $type,
-                $field->isPrimary() ? PHP_EOL.'     * @Primary' : '',
-                $field->isAutoIncrement() ? PHP_EOL.'     * @Identity' : '',
-                $field->getName(),
-                $type,
-                $field->getSize() ? ', length=' . $field->getSize() : '',
-                $field->isNotNull() ? 'false' : 'true', $visibility, $fieldName).PHP_EOL;
+                    $type,
+                    $field->isPrimary() ? PHP_EOL.'     * @Primary' : '',
+                    $field->isAutoIncrement() ? PHP_EOL.'     * @Identity' : '',
+                    $field->getName(),
+                    $type,
+                    $field->getSize() ? ', length=' . $field->getSize() : '',
+                    $field->isNotNull() ? 'false' : 'true', $visibility, $fieldName).PHP_EOL;
         } else {
             $templateAttributes = <<<EOD
     /**
@@ -238,7 +249,7 @@ EOD;
 %s
     }
 EOD;
-        return PHP_EOL.sprintf($templateInitialize, rtrim(join('', $pieces))).PHP_EOL;
+        return PHP_EOL.sprintf($templateInitialize, rtrim(implode('', $pieces))).PHP_EOL;
     }
 
     public function getModelFind($className)
@@ -298,7 +309,7 @@ EOD;
             $values[] = sprintf('\'%s\' => %s', $name, $val);
         }
 
-        return '['. join(',', $values). ']';
+        return '['. implode(',', $values). ']';
     }
 
     /**
@@ -329,7 +340,7 @@ EOD;
             $contents[] = sprintf('\'%s\' => \'%s\'', $name, $camelize ? Utils::lowerCamelize($name) : $name);
         }
 
-        return PHP_EOL.sprintf($template, join(",\n            ", $contents)).PHP_EOL;
+        return PHP_EOL.sprintf($template, implode(",\n            ", $contents)).PHP_EOL;
     }
 
     public function getMigrationMorph($className, $table, $tableDefinition)
@@ -396,7 +407,7 @@ EOD;
             ]
         );
 EOD;
-        return sprintf($template, $table, join(",\n                ", $allFields));
+        return sprintf($template, $table, implode(",\n                ", $allFields));
     }
 
     public function getMigrationAfterCreateTable($table, $allFields)
@@ -416,7 +427,7 @@ EOD;
         );
      }
 EOD;
-        return sprintf($template, $table, join(",\n                ", $allFields));
+        return sprintf($template, $table, implode(",\n                ", $allFields));
     }
 
     public function getMigrationBatchDelete($table)
@@ -435,7 +446,7 @@ EOD;
                 ],
 
 EOD;
-        return sprintf($template, $name, join(",\n                    ", $definition));
+        return sprintf($template, $name, implode(",\n                    ", $definition));
     }
 
     public function getColumnDefinition($field, $fieldDefinition)
@@ -449,7 +460,7 @@ new Column(
                     )
 EOD;
 
-        return sprintf($template, $field, join(",\n                            ", $fieldDefinition));
+        return sprintf($template, $field, implode(",\n                            ", $fieldDefinition));
     }
 
     public function getIndexDefinition($indexName, $indexDefinition, $indexType = null)
@@ -458,7 +469,7 @@ EOD;
 new Index('%s', [%s], %s)
 EOD;
 
-        return sprintf($template, $indexName, join(", ", $indexDefinition), $indexType ? "'$indexType'" : 'null');
+        return sprintf($template, $indexName, implode(", ", $indexDefinition), $indexType ? "'$indexType'" : 'null');
     }
 
     public function getReferenceDefinition($constraintName, $referenceDefinition)
@@ -472,7 +483,11 @@ new Reference(
                     )
 EOD;
 
-        return sprintf($template, $constraintName, join(",\n                            ", $referenceDefinition));
+        return sprintf(
+            $template,
+            $constraintName,
+            implode(",\n                            ", $referenceDefinition)
+        );
     }
 
     public function getUse($class)

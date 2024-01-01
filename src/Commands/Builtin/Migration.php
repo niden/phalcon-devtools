@@ -1,7 +1,5 @@
 <?php
 
-declare(strict_types=1);
-
 /**
  * This file is part of the Phalcon Developer Tools.
  *
@@ -11,15 +9,24 @@ declare(strict_types=1);
  * the LICENSE file that was distributed with this source code.
  */
 
+declare(strict_types=1);
+
 namespace Phalcon\DevTools\Commands\Builtin;
 
-use Phalcon\Config;
+use Phalcon\Config\Config;
 use Phalcon\DevTools\Commands\Command;
 use Phalcon\DevTools\Commands\CommandsException;
 use Phalcon\DevTools\Script\Color;
 use Phalcon\Migrations\Migrations;
 use Phalcon\Migrations\Script\ScriptException;
 use Phalcon\Mvc\Model\Exception;
+
+use function explode;
+use function file_exists;
+use function realpath;
+
+use const DIRECTORY_SEPARATOR;
+use const PHP_EOL;
 
 /**
  * Migration Command
@@ -33,32 +40,82 @@ class Migration extends Command
      *
      * @return array
      */
+    public function getCommands(): array
+    {
+        return ['migration', 'create-migration'];
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @return void
+     */
+    public function getHelp(): void
+    {
+        print Color::head('Help:') . PHP_EOL;
+        print Color::colorize('  Generates/Run a Migration') . PHP_EOL . PHP_EOL;
+
+        print Color::head('Usage: Generate a Migration') . PHP_EOL;
+        print Color::colorize('  migration generate', Color::FG_GREEN) . PHP_EOL . PHP_EOL;
+
+        print Color::head('Usage: Run a Migration') . PHP_EOL;
+        print Color::colorize('  migration run', Color::FG_GREEN) . PHP_EOL . PHP_EOL;
+
+        print Color::head('Usage: List all available migrations') . PHP_EOL;
+        print Color::colorize('  migration list', Color::FG_GREEN) . PHP_EOL . PHP_EOL;
+
+        print Color::head('Arguments:') . PHP_EOL;
+        print Color::colorize('  help', Color::FG_GREEN);
+        print Color::colorize("\tShows this help text") . PHP_EOL . PHP_EOL;
+
+        $this->printParameters($this->getPossibleParams());
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @return array
+     */
     public function getPossibleParams(): array
     {
         return [
-            'action=s' => 'Generates a Migration [generate|run]',
-            'config=s' => 'Configuration file',
-            'migrations=s' => 'Migrations directory. Use comma separated string to specify multiple directories',
-            'directory=s' => 'Directory where the project was created',
-            'table=s' => 'Table to migrate. Table name or table prefix with asterisk. Default: all',
-            'version=s' => 'Version to migrate',
-            'descr=s' => 'Migration description (used for timestamp based migration)',
-            'data=s' => 'Export data [always|oncreate] (Import data when run migration)',
+            'action=s'               => 'Generates a Migration [generate|run]',
+            'config=s'               => 'Configuration file',
+            'migrations=s'           => 'Migrations directory. '
+                . 'Use comma separated string to specify multiple directories',
+            'directory=s'            => 'Directory where the project was created',
+            'table=s'                => 'Table to migrate. '
+                . 'Table name or table prefix with asterisk. Default: all',
+            'version=s'              => 'Version to migrate',
+            'descr=s'                => 'Migration description (used for timestamp based migration)',
+            'data=s'                 => 'Export data [always|oncreate] (Import data when run migration)',
             'exportDataFromTables=s' => 'Export data from specific tables, use comma separated string.',
-            'force' => 'Forces to overwrite existing migrations',
-            'ts-based' => 'Timestamp based migration version',
-            'log-in-db' => 'Keep migrations log in the database table rather than in file',
-            'dry' => 'Attempt requested operation without making changes to system (Generating only)',
-            'verbose' => 'Output of debugging information during operation (Running only)',
-            'no-auto-increment' => 'Disable auto increment (Generating only)',
-            'help' => 'Shows this help [optional]',
+            'force'                  => 'Forces to overwrite existing migrations',
+            'ts-based'               => 'Timestamp based migration version',
+            'log-in-db'              => 'Keep migrations log in the database table rather than in file',
+            'dry'                    => 'Attempt requested operation '
+                . 'without making changes to system (Generating only)',
+            'verbose'                => 'Output of debugging information during operation (Running only)',
+            'no-auto-increment'      => 'Disable auto increment (Generating only)',
+            'help'                   => 'Shows this help [optional]',
         ];
     }
 
     /**
      * {@inheritdoc}
      *
+     * @return int
+     */
+    public function getRequiredParams(): int
+    {
+        return 1;
+    }
+
+    /**
+     * {@inheritdoc}
+     *
      * @param array $parameters
+     *
      * @throws CommandsException
      * @throws ScriptException
      * @throws Exception
@@ -128,22 +185,22 @@ class Migration extends Command
         }
 
         $tableName = $this->isReceivedOption('table') ? $this->getOption('table') : '@';
-        $action = $this->getOption(['action', 1]);
+        $action    = $this->getOption(['action', 1]);
 
         switch ($action) {
             case 'generate':
                 Migrations::generate([
-                    'directory'       => $path,
-                    'tableName'       => $tableName,
-                    'exportData'      => $this->getOption('data'),
-                    'exportDataFromTables'      => $exportDataFromTables,
-                    'migrationsDir'   => $migrationsDir,
-                    'version'         => $this->getOption('version'),
-                    'force'           => $this->isReceivedOption('force'),
-                    'noAutoIncrement' => $this->isReceivedOption('no-auto-increment'),
-                    'config'          => $config,
-                    'descr'           => $this->getOption('descr'),
-                    'verbose'         => $this->isReceivedOption('dry'),
+                    'directory'            => $path,
+                    'tableName'            => $tableName,
+                    'exportData'           => $this->getOption('data'),
+                    'exportDataFromTables' => $exportDataFromTables,
+                    'migrationsDir'        => $migrationsDir,
+                    'version'              => $this->getOption('version'),
+                    'force'                => $this->isReceivedOption('force'),
+                    'noAutoIncrement'      => $this->isReceivedOption('no-auto-increment'),
+                    'config'               => $config,
+                    'descr'                => $this->getOption('descr'),
+                    'verbose'              => $this->isReceivedOption('dry'),
                 ]);
                 break;
             case 'run':
@@ -172,51 +229,5 @@ class Migration extends Command
                 ]);
                 break;
         }
-    }
-
-    /**
-     * {@inheritdoc}
-     *
-     * @return array
-     */
-    public function getCommands(): array
-    {
-        return ['migration', 'create-migration'];
-    }
-
-    /**
-     * {@inheritdoc}
-     *
-     * @return void
-     */
-    public function getHelp(): void
-    {
-        print Color::head('Help:') . PHP_EOL;
-        print Color::colorize('  Generates/Run a Migration') . PHP_EOL . PHP_EOL;
-
-        print Color::head('Usage: Generate a Migration') . PHP_EOL;
-        print Color::colorize('  migration generate', Color::FG_GREEN) . PHP_EOL . PHP_EOL;
-
-        print Color::head('Usage: Run a Migration') . PHP_EOL;
-        print Color::colorize('  migration run', Color::FG_GREEN) . PHP_EOL . PHP_EOL;
-
-        print Color::head('Usage: List all available migrations') . PHP_EOL;
-        print Color::colorize('  migration list', Color::FG_GREEN) . PHP_EOL . PHP_EOL;
-
-        print Color::head('Arguments:') . PHP_EOL;
-        print Color::colorize('  help', Color::FG_GREEN);
-        print Color::colorize("\tShows this help text") . PHP_EOL . PHP_EOL;
-
-        $this->printParameters($this->getPossibleParams());
-    }
-
-    /**
-     * {@inheritdoc}
-     *
-     * @return int
-     */
-    public function getRequiredParams(): int
-    {
-        return 1;
     }
 }

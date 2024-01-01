@@ -1,7 +1,5 @@
 <?php
 
-declare(strict_types=1);
-
 /**
  * This file is part of the Phalcon Developer Tools.
  *
@@ -11,9 +9,11 @@ declare(strict_types=1);
  * the LICENSE file that was distributed with this source code.
  */
 
+declare(strict_types=1);
+
 namespace Phalcon\DevTools;
 
-use Phalcon\Version as PhVersion;
+use Phalcon\Support\Version as PhVersion;
 
 /**
  * This class allows to get the installed version of the Developer Tools
@@ -26,9 +26,9 @@ class Version extends PhVersion
      * @return array
      */
     // phpcs:disable
-    protected static function _getVersion(): array
+    protected function getVersion(): array
     {
-        return [4, 1, 0, 0, 0];
+        return [5, 1, 0, 0, 0];
     }
     // phpcs:enable
 }

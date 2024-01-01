@@ -14,7 +14,7 @@ declare(strict_types=1);
 if (!extension_loaded('phalcon')) {
     throw new Exception(
         "Phalcon extension isn't installed, follow these instructions to install it: " .
-        'https://docs.phalcon.io/en/latest/installation'
+        'https://docs.phalcon.io/latest/installation'
     );
 }
 
@@ -31,13 +31,18 @@ defined('DEVTOOLS_START_MEMORY') || define('DEVTOOLS_START_MEMORY', memory_get_u
 /**
  * @const PTOOLSPATH The path to the Phalcon Developers Tools.
  */
-defined('PTOOLSPATH') || define('PTOOLSPATH', rtrim(trim((string) getenv('PTOOLSPATH'), '\"\'') ?: dirname(dirname(__FILE__)), '\\/'));
+defined('PTOOLSPATH') ||
+    define('PTOOLSPATH', rtrim(trim((string) getenv('PTOOLSPATH'), '\"\'')
+    ?: dirname(dirname(__FILE__)), '\\/'));
 
 /**
  * Check for old versions
  */
 $currentPath = realpath(dirname(dirname(__FILE__)));
-if ($currentPath !== false && rtrim(strtolower(realpath(PTOOLSPATH)), '\\/') !== rtrim(strtolower($currentPath), '\\/')) {
+if (
+    $currentPath !== false &&
+    rtrim(strtolower(realpath(PTOOLSPATH)), '\\/') !== rtrim(strtolower($currentPath), '\\/')
+) {
     throw new Exception(
         sprintf(
             'The environment variable PTOOLSPATH is outdated! Current value: %s. New value: %s',

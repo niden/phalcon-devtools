@@ -1,7 +1,5 @@
 <?php
 
-declare(strict_types=1);
-
 /**
  * This file is part of the Phalcon Developer Tools.
  *
@@ -11,16 +9,19 @@ declare(strict_types=1);
  * the LICENSE file that was distributed with this source code.
  */
 
+declare(strict_types=1);
+
 namespace Phalcon\DevTools\Commands\Builtin;
 
-use Phalcon\Config;
 use Phalcon\Config\Adapter\Ini as ConfigIni;
+use Phalcon\Config\Config;
+use Phalcon\Config\Exception as ConfigException;
 use Phalcon\DevTools\Builder\Component\Model as ModelBuilder;
 use Phalcon\DevTools\Builder\Exception\BuilderException;
 use Phalcon\DevTools\Commands\Command;
 use Phalcon\DevTools\Script\Color;
 use Phalcon\DevTools\Utils;
-use Phalcon\Text;
+use Phalcon\Traits\Helper\Str\UncamelizeTrait;
 
 /**
  * Model Command
@@ -29,69 +30,7 @@ use Phalcon\Text;
  */
 class Model extends Command
 {
-    /**
-     * {@inheritdoc}
-     *
-     * @return array
-     */
-    public function getPossibleParams(): array
-    {
-        return [
-            'name=s'          => 'Table name',
-            'schema=s'        => 'Name of the schema [optional]',
-            'config=s'        => 'Configuration file [optional]',
-            'namespace=s'     => "Model's namespace [optional]",
-            'get-set'         => 'Attributes will be protected and have setters/getters [optional]',
-            'extends=s'       => 'Model extends the class name supplied [optional]',
-            'excludefields=l' => 'Excludes fields defined in a comma separated list [optional]',
-            'doc'             => 'Helps to improve code completion on IDEs [optional]',
-            'directory=s'     => 'Base path on which project is located [optional]',
-            'output=s'        => 'Folder where models are located [optional]',
-            'force'           => 'Rewrite the model [optional]',
-            'camelize'        => 'Properties is in camelCase [optional]',
-            'trace'           => 'Shows the trace of the framework in case of exception [optional]',
-            'mapcolumn'       => 'Get some code for map columns [optional]',
-            'abstract'        => 'Abstract Model [optional]',
-            'annotate'        => 'Annotate Attributes [optional]',
-            'help'            => 'Shows this help [optional]',
-        ];
-    }
-
-    /**
-     * {@inheritdoc}
-     *
-     * @param array $parameters
-     * @throws BuilderException
-     */
-    public function run(array $parameters): void
-    {
-        $name = $this->getOption(['name', 1]);
-        $className = Utils::camelize(isset($parameters[1]) ? $parameters[1] : $name, '_-');
-
-        $modelBuilder = new ModelBuilder(
-            [
-                'name'              => $name,
-                'schema'            => $this->getOption('schema'),
-                'config'            => $this->getConfigObject(),
-                'className'         => $className,
-                'fileName'          => Text::uncamelize($className),
-                'genSettersGetters' => $this->isReceivedOption('get-set'),
-                'genDocMethods'     => $this->isReceivedOption('doc'),
-                'namespace'         => $this->getOption('namespace'),
-                'directory'         => $this->getOption('directory'),
-                'modelsDir'         => $this->getOption('output'),
-                'extends'           => $this->getOption('extends'),
-                'excludeFields'     => $this->getOption('excludefields'),
-                'camelize'          => $this->isReceivedOption('camelize'),
-                'force'             => $this->isReceivedOption('force'),
-                'mapColumn'         => $this->isReceivedOption('mapcolumn'),
-                'abstract'          => $this->isReceivedOption('abstract'),
-                'annotate'          => $this->isReceivedOption('annotate')
-            ]
-        );
-
-        $modelBuilder->build();
-    }
+    use UncamelizeTrait;
 
     /**
      * {@inheritdoc}
@@ -126,6 +65,34 @@ class Model extends Command
     /**
      * {@inheritdoc}
      *
+     * @return array
+     */
+    public function getPossibleParams(): array
+    {
+        return [
+            'name=s'          => 'Table name',
+            'schema=s'        => 'Name of the schema [optional]',
+            'config=s'        => 'Configuration file [optional]',
+            'namespace=s'     => "Model's namespace [optional]",
+            'get-set'         => 'Attributes will be protected and have setters/getters [optional]',
+            'extends=s'       => 'Model extends the class name supplied [optional]',
+            'excludefields=l' => 'Excludes fields defined in a comma separated list [optional]',
+            'doc'             => 'Helps to improve code completion on IDEs [optional]',
+            'directory=s'     => 'Base path on which project is located [optional]',
+            'output=s'        => 'Folder where models are located [optional]',
+            'force'           => 'Rewrite the model [optional]',
+            'camelize'        => 'Properties is in camelCase [optional]',
+            'trace'           => 'Shows the trace of the framework in case of exception [optional]',
+            'mapcolumn'       => 'Get some code for map columns [optional]',
+            'abstract'        => 'Abstract Model [optional]',
+            'annotate'        => 'Annotate Attributes [optional]',
+            'help'            => 'Shows this help [optional]',
+        ];
+    }
+
+    /**
+     * {@inheritdoc}
+     *
      * @return int
      */
     public function getRequiredParams(): int
@@ -134,10 +101,55 @@ class Model extends Command
     }
 
     /**
+     * {@inheritdoc}
+     *
+     * @param array $parameters
+     *
+     * @return void
+     * @throws BuilderException
+     * @throws ConfigException
+     */
+    public function run(array $parameters): void
+    {
+        $name      = $this->getOption(['name', 1]);
+        $className = Utils::camelize(isset($parameters[1]) ? $parameters[1] : $name, '_-');
+
+        $modelBuilder = new ModelBuilder(
+            [
+                'name'              => $name,
+                'schema'            => $this->getOption('schema'),
+                'config'            => $this->getConfigObject(),
+                'className'         => $className,
+                'fileName'          => $this->toUncamelize($className),
+                'genSettersGetters' => $this->isReceivedOption('get-set'),
+                'genDocMethods'     => $this->isReceivedOption('doc'),
+                'namespace'         => $this->getOption('namespace'),
+                'directory'         => $this->getOption('directory'),
+                'modelsDir'         => $this->getOption('output'),
+                'extends'           => $this->getOption('extends'),
+                'excludeFields'     => $this->getOption('excludefields'),
+                'camelize'          => $this->isReceivedOption('camelize'),
+                'force'             => $this->isReceivedOption('force'),
+                'mapColumn'         => $this->isReceivedOption('mapcolumn'),
+                'abstract'          => $this->isReceivedOption('abstract'),
+                'annotate'          => $this->isReceivedOption('annotate'),
+            ]
+        );
+
+        $modelBuilder->build();
+    }
+
+    /**
      * Get Config object
      *
      * @return Config
      * @throws BuilderException
+     */
+
+    /**
+     * @return Config
+     * @throws BuilderException
+     * @throws ConfigException
      */
     protected function getConfigObject(): Config
     {

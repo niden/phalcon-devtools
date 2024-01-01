@@ -5,7 +5,7 @@
 # (c) Phalcon Team <team@phalcon.io>
 #
 # For the full copyright and license information, please view the
-# LICENSE.txt file that was distributed with this source code.
+# LICENSE file that was distributed with this source code.
 
 PURPLE="\033[0;35m"
 GREEN="\033[0;32m"

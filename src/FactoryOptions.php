@@ -1,7 +1,5 @@
 <?php
 
-declare(strict_types=1);
-
 /**
  * This file is part of the Phalcon Developer Tools.
  *
@@ -11,6 +9,8 @@ declare(strict_types=1);
  * the LICENSE file that was distributed with this source code.
  */
 
+declare(strict_types=1);
+
 namespace Phalcon\DevTools;
 
 /**
@@ -19,19 +19,15 @@ namespace Phalcon\DevTools;
 interface FactoryOptions
 {
     /**
-     * Set all options to option container
-     *
-     * @param array $options
-     */
-    public function setOptions(array $options);
-
-    /**
-     * Set one option to option container
+     * Get valid option or throw exception
      *
      * @param mixed $key
-     * @param mixed $option
+     *
+     * @throw InvalidArgumentException
+     *
+     * @return mixed
      */
-    public function setOption($key, $option);
+    public function getOption($key);
 
     /**
      * Get all options from the option container
@@ -41,14 +37,14 @@ interface FactoryOptions
     public function getOptions();
 
     /**
-     * Get valid option or throw exception
+     * Return valid option value or default value
      *
      * @param mixed $key
-     * @throw InvalidArgumentException
+     * @param mixed $defaultOption
      *
      * @return mixed
      */
-    public function getOption($key);
+    public function getValidOptionOrDefault($key, $defaultOption);
 
     /**
      * Check whether option container has value with this key
@@ -60,12 +56,17 @@ interface FactoryOptions
     public function hasOption($key);
 
     /**
-     * Return valid option value or default value
+     * Set one option to option container
      *
      * @param mixed $key
-     * @param mixed $defaultOption
-     *
-     * @return mixed
+     * @param mixed $option
      */
-    public function getValidOptionOrDefault($key, $defaultOption);
+    public function setOption($key, $option);
+
+    /**
+     * Set all options to option container
+     *
+     * @param array $options
+     */
+    public function setOptions(array $options);
 }

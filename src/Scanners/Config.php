@@ -1,7 +1,5 @@
 <?php
 
-declare(strict_types=1);
-
 /**
  * This file is part of the Phalcon Developer Tools.
  *
@@ -11,22 +9,55 @@ declare(strict_types=1);
  * the LICENSE file that was distributed with this source code.
  */
 
+declare(strict_types=1);
+
 namespace Phalcon\DevTools\Scanners;
 
-use Phalcon\Config as PhConfig;
 use Phalcon\Config\Adapter\Ini as IniConfig;
 use Phalcon\Config\Adapter\Json as JsonConfig;
 use Phalcon\Config\Adapter\Yaml as YamlConfig;
+use Phalcon\Config\Config as PhConfig;
 use Phalcon\Config\Exception;
 use Phalcon\DevTools\Utils\FsUtils;
 use Phalcon\Di\Injectable;
 
+use function array_map;
+use function implode;
+use function in_array;
+use function is_array;
+use function is_dir;
+use function is_file;
+use function is_readable;
+use function is_string;
+use function pathinfo;
+use function rtrim;
+use function sprintf;
+
+use const DIRECTORY_SEPARATOR;
+use const PATHINFO_FILENAME;
+
 class Config extends Injectable
 {
     /**
+     * @var string
+     */
+    protected string $basePath = '';
+    /**
      * @var array
      */
-    protected $configDirs = [
+    protected array $configAdapters = [
+        'ini'  => IniConfig::class,
+        'json' => JsonConfig::class,
+        'php'  => PhConfig::class,
+        'php5' => PhConfig::class,
+        'inc'  => PhConfig::class,
+        'yml'  => YamlConfig::class,
+        'yaml' => YamlConfig::class,
+    ];
+    /**
+     * @var array
+     */
+    protected array $configDirs = [
         'config',
         'app/config',
         'apps/config',
@@ -36,24 +67,6 @@ class Config extends Injectable
         'apps/backend/config',
     ];
 
-    /**
-     * @var array
-     */
-    protected $configAdapters = [
-        'ini'  => IniConfig::class,
-        'json' => JsonConfig::class,
-        'php'  => PhConfig::class,
-        'php5' => PhConfig::class,
-        'inc'  => PhConfig::class,
-        'yml'  => YamlConfig::class,
-        'yaml' => YamlConfig::class,
-    ];
-
-    /**
-     * @var string
-     */
-    protected $basePath = '';
-
     public function __construct($basePath)
     {
         if (is_string($basePath)) {
@@ -62,37 +75,23 @@ class Config extends Injectable
     }
 
     /**
-     * Scans for application config.
+     * Prepares config paths.
      *
-     * @param string $filename The config basename.
-     * @return null|PhConfig
+     * @return array
      */
-    public function scan(string $filename): ?PhConfig
+    public function getConfigPaths(): array
     {
-        $config = null;
-        $filename = pathinfo($filename, PATHINFO_FILENAME);
+        /** @var FsUtils $fsUtils */
+        $fsUtils  = $this->getDI()->getShared('fs');
+        $basePath = $this->basePath;
 
-        foreach ($this->getConfigPaths() as $probablyPath) {
-            foreach ($this->configAdapters as $ext => $adapter) {
-                $probablyConfig = $probablyPath . DIRECTORY_SEPARATOR . "{$filename}.{$ext}";
-
-                if (is_file($probablyConfig) && is_readable($probablyConfig)) {
-                    if (in_array($ext, ['php', 'php5', 'inc'])) {
-                        /** @noinspection PhpIncludeInspection */
-                        $config = include($probablyConfig);
-                        if (is_array($config)) {
-                            $config = new PhConfig($config);
-                        }
-                    } else {
-                        $config = new $adapter($probablyConfig);
-                    }
-
-                    break(2);
-                }
-            }
+        if (!is_dir($basePath) || !is_readable($basePath)) {
+            return [];
         }
 
-        return $config;
+        return array_map(function ($val) use ($basePath, $fsUtils) {
+            return $basePath . $fsUtils->normalize("/{$val}");
+        }, $this->configDirs);
     }
 
     /**
@@ -120,22 +119,37 @@ class Config extends Injectable
     }
 
     /**
-     * Prepares config paths.
+     * Scans for application config.
      *
-     * @return array
+     * @param string $filename The config basename.
+     *
+     * @return null|PhConfig
      */
-    public function getConfigPaths(): array
+    public function scan(string $filename): ?PhConfig
     {
-        /** @var FsUtils $fsUtils */
-        $fsUtils  = $this->getDI()->getShared('fs');
-        $basePath = $this->basePath;
+        $config   = null;
+        $filename = pathinfo($filename, PATHINFO_FILENAME);
 
-        if (!is_dir($basePath) || !is_readable($basePath)) {
-            return [];
+        foreach ($this->getConfigPaths() as $probablyPath) {
+            foreach ($this->configAdapters as $ext => $adapter) {
+                $probablyConfig = $probablyPath . DIRECTORY_SEPARATOR . "{$filename}.{$ext}";
+
+                if (is_file($probablyConfig) && is_readable($probablyConfig)) {
+                    if (in_array($ext, ['php', 'php5', 'inc'])) {
+                        /** @noinspection PhpIncludeInspection */
+                        $config = include($probablyConfig);
+                        if (is_array($config)) {
+                            $config = new PhConfig($config);
+                        }
+                    } else {
+                        $config = new $adapter($probablyConfig);
+                    }
+
+                    break(2);
+                }
+            }
         }
 
-        return array_map(function ($val) use ($basePath, $fsUtils) {
-            return $basePath . $fsUtils->normalize("/{$val}");
-        }, $this->configDirs);
+        return $config;
     }
 }

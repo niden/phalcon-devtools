@@ -1,7 +1,5 @@
 <?php
 
-declare(strict_types=1);
-
 /**
  * This file is part of the Phalcon Developer Tools.
  *
@@ -11,53 +9,34 @@ declare(strict_types=1);
  * the LICENSE file that was distributed with this source code.
  */
 
+declare(strict_types=1);
+
 namespace Phalcon\DevTools\Commands\Builtin;
 
 use Phalcon\DevTools\Commands\Command;
 use Phalcon\DevTools\Script\Color;
+
+use function join;
+use function str_repeat;
+use function strlen;
+
+use const PHP_EOL;
 
 /**
  * Enumerate Command
  */
 class Enumerate extends Command
 {
-    const COMMAND_COLUMN_LEN = 16;
+    public const COMMAND_COLUMN_LEN = 16;
 
     /**
      * {@inheritdoc}
      *
-     * @return array
+     * @return bool
      */
-    public function getPossibleParams(): array
+    public function canBeExternal(): bool
     {
-        return [
-            'help' => 'Shows this help [optional]',
-        ];
-    }
-
-    /**
-     * {@inheritdoc}
-     *
-     * @param array $parameters
-     */
-    public function run(array $parameters): void
-    {
-        print Color::colorize('Available commands:', Color::FG_BROWN) . PHP_EOL;
-        foreach ($this->getScript()->getCommands() as $commands) {
-            $providedCommands = $commands->getCommands();
-            $commandLen = strlen($providedCommands[0]);
-
-            print '  ' . Color::colorize($providedCommands[0], Color::FG_GREEN);
-            unset($providedCommands[0]);
-            if (count($providedCommands)) {
-                $spacer = str_repeat(' ', self::COMMAND_COLUMN_LEN - $commandLen);
-                print $spacer . ' (alias of: ' . Color::colorize(join(', ', $providedCommands)) . ')';
-            }
-
-            print PHP_EOL;
-        }
-
-        print PHP_EOL;
+        return true;
     }
 
     /**
@@ -68,16 +47,6 @@ class Enumerate extends Command
     public function getCommands(): array
     {
         return ['commands', 'list', 'enumerate'];
-    }
-
-    /**
-     * {@inheritdoc}
-     *
-     * @return bool
-     */
-    public function canBeExternal(): bool
-    {
-        return true;
     }
 
     /**
@@ -96,10 +65,47 @@ class Enumerate extends Command
     /**
      * {@inheritdoc}
      *
+     * @return array
+     */
+    public function getPossibleParams(): array
+    {
+        return [
+            'help' => 'Shows this help [optional]',
+        ];
+    }
+
+    /**
+     * {@inheritdoc}
+     *
      * @return int
      */
     public function getRequiredParams(): int
     {
         return 0;
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @param array $parameters
+     */
+    public function run(array $parameters): void
+    {
+        print Color::colorize('Available commands:', Color::FG_BROWN) . PHP_EOL;
+        foreach ($this->getScript()->getCommands() as $commands) {
+            $providedCommands = $commands->getCommands();
+            $commandLen       = strlen($providedCommands[0]);
+
+            print '  ' . Color::colorize($providedCommands[0], Color::FG_GREEN);
+            unset($providedCommands[0]);
+            if (count($providedCommands)) {
+                $spacer = str_repeat(' ', self::COMMAND_COLUMN_LEN - $commandLen);
+                print $spacer . ' (alias of: ' . Color::colorize(implode(', ', $providedCommands)) . ')';
+            }
+
+            print PHP_EOL;
+        }
+
+        print PHP_EOL;
     }
 }

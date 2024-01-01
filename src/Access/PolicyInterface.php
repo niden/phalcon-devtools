@@ -1,7 +1,5 @@
 <?php
 
-declare(strict_types=1);
-
 /**
  * This file is part of the Phalcon Developer Tools.
  *
@@ -11,6 +9,8 @@ declare(strict_types=1);
  * the LICENSE file that was distributed with this source code.
  */
 
+declare(strict_types=1);
+
 namespace Phalcon\DevTools\Access;
 
 interface PolicyInterface
@@ -18,8 +18,9 @@ interface PolicyInterface
     /**
      * Checks whether a user is allowed to access an resource.
      *
-     * @param string $resourceName Resource name.
-     * @param array $data Data. [Optional]
+     * @param string     $resourceName Resource name.
+     * @param array|null $data         Data. [Optional]
+     *
      * @return bool
      */
     public function isAllowedAccess(string $resourceName, array $data = null): bool;

@@ -1,7 +1,5 @@
 <?php
 
-declare(strict_types=1);
-
 /**
  * This file is part of the Phalcon Developer Tools.
  *
@@ -11,15 +9,21 @@ declare(strict_types=1);
  * the LICENSE file that was distributed with this source code.
  */
 
+declare(strict_types=1);
+
 namespace Phalcon\DevTools\Builder\Project;
 
-use Phalcon\Config;
+use Phalcon\Config\Config;
+
+use function rtrim;
+
+use const DIRECTORY_SEPARATOR;
 
 /**
  * @property Config $options
  * @method static generateFile(string $fromFile, string $toFile, string $name = '')
  */
-trait ProjectAware
+trait ProjectAwareTrait
 {
     /**
      * Create .htrouter.php file
@@ -40,7 +44,7 @@ trait ProjectAware
         }
 
         $fromFile = rtrim($templatePath, '\\/') . DIRECTORY_SEPARATOR . '.htrouter.php';
-        $toFile = $projectPath . '.htrouter.php';
+        $toFile   = $projectPath . '.htrouter.php';
 
         $this->generateFile($fromFile, $toFile);
 

@@ -1,7 +1,5 @@
 <?php
 
-declare(strict_types=1);
-
 /**
  * This file is part of the Phalcon Developer Tools.
  *
@@ -11,11 +9,21 @@ declare(strict_types=1);
  * the LICENSE file that was distributed with this source code.
  */
 
+declare(strict_types=1);
+
 namespace Phalcon\DevTools\Builder\Component;
 
+use Phalcon\Db\Adapter\Pdo\AbstractPdo;
 use Phalcon\DevTools\Builder\Exception\BuilderException;
 use Phalcon\DevTools\Script\Color;
 use Phalcon\DevTools\Utils;
+
+use function file_exists;
+use function is_object;
+use function rtrim;
+use function sprintf;
+
+use const DIRECTORY_SEPARATOR;
 
 /**
  * Builder to generate all models
@@ -25,7 +33,7 @@ class AllModels extends AbstractComponent
     /**
      * @var array
      */
-    public $exist = [];
+    public array $exist = [];
 
     /**
      * Create Builder object
@@ -81,10 +89,10 @@ class AllModels extends AbstractComponent
         $forceProcess = $this->options->get('force');
 
         /** @var bool $defineRelations */
-        $defineRelations = $this->options->get('defineRelations', false);
+        $defineRelations   = $this->options->get('defineRelations', false);
         $defineForeignKeys = $this->options->get('foreignKeys', false);
         $genSettersGetters = $this->options->get('genSettersGetters', false);
-        $mapColumn = $this->options->get('mapColumn', false);
+        $mapColumn         = $this->options->get('mapColumn', false);
 
         $adapter = $config->database->adapter ?? 'Mysql';
         $this->isSupportedAdapter($adapter);
@@ -99,7 +107,7 @@ class AllModels extends AbstractComponent
         unset($configArray['adapter']);
 
         /**
-         * @var \Phalcon\Db\Adapter\Pdo\AbstractPdo $db
+         * @var AbstractPdo $db
          */
         $db = new $adapterName($configArray);
 
@@ -109,9 +117,9 @@ class AllModels extends AbstractComponent
             $schema = Utils::resolveDbSchema($config->database);
         }
 
-        $hasMany = [];
-        $belongsTo = [];
-        $foreignKeys = [];
+        $hasMany       = [];
+        $belongsTo     = [];
+        $foreignKeys   = [];
         $referenceList = [];
         if ($defineRelations || $defineForeignKeys) {
             foreach ($db->listTables($schema) as $name) {
@@ -129,26 +137,26 @@ class AllModels extends AbstractComponent
                     $foreignKeys[$name] = [];
                 }
 
-                $camelCaseName = Utils::camelize($name);
-                $refSchema = ($adapter != 'Postgresql') ? $schema : $config->database->dbname;
+                $camelCaseName        = Utils::camelize($name);
+                $refSchema            = ($adapter != 'Postgresql') ? $schema : $config->database->dbname;
                 $referenceList[$name] = $db->describeReferences($name, $schema);
 
                 foreach ($referenceList[$name] as $reference) {
-                    $columns = $reference->getColumns();
+                    $columns           = $reference->getColumns();
                     $referencedColumns = $reference->getReferencedColumns();
-                    $referencedModel = Utils::camelize($reference->getReferencedTable());
+                    $referencedModel   = Utils::camelize($reference->getReferencedTable());
 
                     if ($defineRelations && $reference->getReferencedSchema() == $refSchema && count($columns) === 1) {
-                        $belongsTo[$name][] = [
+                        $belongsTo[$name][]                          = [
                             'referencedModel' => $referencedModel,
-                            'fields' => $columns[0],
-                            'relationFields' => $referencedColumns[0],
-                            'options' => $defineForeignKeys ? ['foreignKey' => true] : null
+                            'fields'          => $columns[0],
+                            'relationFields'  => $referencedColumns[0],
+                            'options'         => $defineForeignKeys ? ['foreignKey' => true] : null,
                         ];
                         $hasMany[$reference->getReferencedTable()][] = [
-                            'camelizedName' => $camelCaseName,
-                            'fields' => $referencedColumns[0],
-                            'relationFields' => $columns[0]
+                            'camelizedName'  => $camelCaseName,
+                            'fields'         => $referencedColumns[0],
+                            'relationFields' => $columns[0],
                         ];
                     }
                 }
@@ -156,8 +164,8 @@ class AllModels extends AbstractComponent
         } else {
             foreach ($db->listTables($schema) as $name) {
                 if (true === $defineRelations) {
-                    $hasMany[$name] = [];
-                    $belongsTo[$name] = [];
+                    $hasMany[$name]     = [];
+                    $belongsTo[$name]   = [];
                     $foreignKeys[$name] = [];
                 }
 
@@ -179,24 +187,24 @@ class AllModels extends AbstractComponent
             }
 
             $modelBuilder = new Model([
-                'name' => $name,
-                'config' => $config,
-                'schema' => $schema,
-                'extends' => $this->options->get('extends'),
-                'namespace' => $this->options->get('namespace'),
-                'force' => $forceProcess,
-                'hasMany' => $hasMany[$name] ?? [],
-                'belongsTo' => $belongsTo[$name] ?? [],
-                'foreignKeys' => $foreignKeys[$name] ?? [],
+                'name'              => $name,
+                'config'            => $config,
+                'schema'            => $schema,
+                'extends'           => $this->options->get('extends'),
+                'namespace'         => $this->options->get('namespace'),
+                'force'             => $forceProcess,
+                'hasMany'           => $hasMany[$name] ?? [],
+                'belongsTo'         => $belongsTo[$name] ?? [],
+                'foreignKeys'       => $foreignKeys[$name] ?? [],
                 'genSettersGetters' => $genSettersGetters,
-                'genDocMethods' => $this->options->get('genDocMethods'),
-                'directory' => $this->options->get('directory'),
-                'modelsDir' => $this->options->get('modelsDir'),
-                'mapColumn' => $mapColumn,
-                'abstract' => $this->options->get('abstract'),
-                'referenceList' => $referenceList,
-                'camelize' => $this->options->get('camelize'),
-                'annotate' => $this->options->get('annotate'),
+                'genDocMethods'     => $this->options->get('genDocMethods'),
+                'directory'         => $this->options->get('directory'),
+                'modelsDir'         => $this->options->get('modelsDir'),
+                'mapColumn'         => $mapColumn,
+                'abstract'          => $this->options->get('abstract'),
+                'referenceList'     => $referenceList,
+                'camelize'          => $this->options->get('camelize'),
+                'annotate'          => $this->options->get('annotate'),
             ]);
 
             $modelBuilder->build();

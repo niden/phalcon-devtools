@@ -8,7 +8,7 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      extensions: mbstring, intl, json, zip, phalcon-4.0.5, mysql, pgsql, xdebug-2.9.8
+      extensions: mbstring, intl, json, zip, phalcon, mysql, pgsql, xdebug
       key: cache-v2.0~19.03.2020
 
     services:
@@ -32,24 +32,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        php-versions: [ '7.2', '7.3', '7.4' ]
+        php-versions: [ '8.0' ]
     steps:
-      - uses: actions/checkout@v1
-
-      - name: Setup cache environment
-        id: cache-env
-        uses: shivammathur/cache-extensions@v1
-        with:
-          php-version: ${{ matrix.php-versions }}
-          extensions: ${{ env.extensions }}
-          key: ${{ env.key }}
-
-      - name: Cache extensions
-        uses: actions/cache@v1
-        with:
-          path: ${{ steps.cache-env.outputs.dir }}
-          key: ${{ steps.cache-env.outputs.key }}
-          restore-keys: ${{ steps.cache-env.outputs.key }}
+      - uses: actions/checkout@v2
 
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
@@ -57,17 +42,6 @@ jobs:
           php-version: ${{ matrix.php-versions }}
           extensions: ${{ env.extensions }}
           tools: pecl
-
-      - name: Get Composer Cache Directory
-        id: composer-cache
-        run: echo "::set-output name=dir::$(composer config cache-files-dir)"
-
-      - name: Cache composer dependencies
-        uses: actions/cache@v1
-        with:
-          path: ${{ steps.composer-cache.outputs.dir }}
-          key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
-          restore-keys: ${{ runner.os }}-composer-
 
       - name: Install Composer dependencies
         run: |
@@ -135,7 +109,7 @@ jobs:
           php content_config.php
           php tests/debug.php
 
-      - uses: actions/upload-artifact@v1
+      - uses: actions/upload-artifact@v2
         if: failure()
         with:
           name: Codeception Logs
@@ -149,7 +123,7 @@ jobs:
 
       - name: Upload coverage to Codecov
         if: success()
-        uses: codecov/codecov-action@v1
+        uses: codecov/codecov-action@v2
         with:
           token: ${{secrets.CODECOV_TOKEN}}
           file: ./tests/_output/coverage-*.xml

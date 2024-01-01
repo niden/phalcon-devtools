@@ -1,7 +1,5 @@
 <?php
 
-declare(strict_types=1);
-
 /**
  * This file is part of the Phalcon Developer Tools.
  *
@@ -11,6 +9,8 @@ declare(strict_types=1);
  * the LICENSE file that was distributed with this source code.
  */
 
+declare(strict_types=1);
+
 namespace Phalcon\DevTools\Commands\Builtin;
 
 use Phalcon\DevTools\Builder\Component\Project as ProjectBuilder;
@@ -18,64 +18,24 @@ use Phalcon\DevTools\Builder\Exception\BuilderException;
 use Phalcon\DevTools\Commands\Command;
 use Phalcon\DevTools\Script\Color;
 
+use const PHP_EOL;
+use const TEMPLATE_PATH;
+
 /**
  * Project Command
  *
  * Creates project skeletons
-*/
+ */
 class Project extends Command
 {
     /**
      * {@inheritdoc}
      *
-     * @return array
+     * @return bool
      */
-    public function getPossibleParams(): array
+    public function canBeExternal(): bool
     {
-        return [
-            'name=s'            => 'Name of the new project',
-            'enable-webtools'   => 'Determines if webtools should be enabled [optional]',
-            'directory=s'       => 'Base path on which project will be created [optional]',
-            'type=s'            => 'Type of the application to be generated (cli, micro, simple, modules)',
-            'template-path=s'   => 'Specify a template path [optional]',
-            'template-engine=s' => 'Define the template engine, default phtml (phtml, volt) [optional]',
-            'use-config-ini'    => 'Use a ini file as configuration file [optional]',
-            'trace'             => 'Shows the trace of the framework in case of exception [optional]',
-            'force'             => 'Creates project even if directory already exists [optional]',
-            'help'              => 'Shows this help [optional]',
-        ];
-    }
-
-    /**
-     * {@inheritdoc}
-     *
-     * @param array $parameters
-     * @return mixed
-     * @throws BuilderException
-     */
-    public function run(array $parameters)
-    {
-        $projectName    = $this->getOption(['name', 1], null, 'default');
-        $projectType    = $this->getOption(['type', 2], null, 'simple');
-        $projectPath    = $this->getOption(['directory', 3], null, '.');
-        $templatePath   = $this->getOption(['template-path'], null, TEMPLATE_PATH);
-        $enableWebtools = $this->getOption(['enable-webtools', 4], null, false);
-        $force          = $this->getOption(['force', 5], null, false);
-        $useConfigIni   = $this->getOption('use-config-ini');
-        $templateEngine = $this->getOption(['template-engine'], null, "phtml");
-
-        $builder = new ProjectBuilder([
-            'name'           => $projectName,
-            'type'           => $projectType,
-            'directory'      => $projectPath,
-            'enableWebTools' => $enableWebtools,
-            'force'          => $force,
-            'templatePath'   => $templatePath,
-            'templateEngine' => $templateEngine,
-            'useConfigIni'   => $useConfigIni
-        ]);
-
-        return $builder->build();
+        return true;
     }
 
     /**
@@ -86,16 +46,6 @@ class Project extends Command
     public function getCommands(): array
     {
         return ['project', 'create-project'];
-    }
-
-    /**
-     * {@inheritdoc}
-     *
-     * @return bool
-     */
-    public function canBeExternal(): bool
-    {
-        return true;
     }
 
     /**
@@ -125,10 +75,64 @@ class Project extends Command
     /**
      * {@inheritdoc}
      *
+     * @return array
+     */
+    public function getPossibleParams(): array
+    {
+        return [
+            'name=s'            => 'Name of the new project',
+            'enable-webtools'   => 'Determines if webtools should be enabled [optional]',
+            'directory=s'       => 'Base path on which project will be created [optional]',
+            'type=s'            => 'Type of the application to be generated (cli, micro, simple, modules)',
+            'template-path=s'   => 'Specify a template path [optional]',
+            'template-engine=s' => 'Define the template engine, default phtml (phtml, volt) [optional]',
+            'use-config-ini'    => 'Use a ini file as configuration file [optional]',
+            'trace'             => 'Shows the trace of the framework in case of exception [optional]',
+            'force'             => 'Creates project even if directory already exists [optional]',
+            'help'              => 'Shows this help [optional]',
+        ];
+    }
+
+    /**
+     * {@inheritdoc}
+     *
      * @return int
      */
     public function getRequiredParams(): int
     {
         return 1;
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @param array $parameters
+     *
+     * @return mixed
+     * @throws BuilderException
+     */
+    public function run(array $parameters)
+    {
+        $projectName    = $this->getOption(['name', 1], null, 'default');
+        $projectType    = $this->getOption(['type', 2], null, 'simple');
+        $projectPath    = $this->getOption(['directory', 3], null, '.');
+        $templatePath   = $this->getOption(['template-path'], null, TEMPLATE_PATH);
+        $enableWebtools = $this->getOption(['enable-webtools', 4], null, false);
+        $force          = $this->getOption(['force', 5], null, false);
+        $useConfigIni   = $this->getOption('use-config-ini');
+        $templateEngine = $this->getOption(['template-engine'], null, "phtml");
+
+        $builder = new ProjectBuilder([
+            'name'           => $projectName,
+            'type'           => $projectType,
+            'directory'      => $projectPath,
+            'enableWebTools' => $enableWebtools,
+            'force'          => $force,
+            'templatePath'   => $templatePath,
+            'templateEngine' => $templateEngine,
+            'useConfigIni'   => $useConfigIni,
+        ]);
+
+        return $builder->build();
     }
 }

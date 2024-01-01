@@ -1,7 +1,5 @@
 <?php
 
-declare(strict_types=1);
-
 /**
  * This file is part of the Phalcon Developer Tools.
  *
@@ -11,7 +9,14 @@ declare(strict_types=1);
  * the LICENSE file that was distributed with this source code.
  */
 
+declare(strict_types=1);
+
 namespace Phalcon\DevTools\Mvc\View\Engine\Volt\Extension;
+
+use function array_slice;
+use function func_get_args;
+use function func_num_args;
+use function function_exists;
 
 /**
  * Allows to use any PHP function in Volt.
