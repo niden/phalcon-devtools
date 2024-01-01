@@ -58,7 +58,7 @@ jobs:
       - name: Symbolic link Phalcon devtools
         run: sudo ln -s "$(pwd)/phalcon" /usr/local/bin/phalcon
 
-      - name: Init Webtools and add ports in database setup
+      - name: Init WebTools and add ports in database setup
         env:
           MYSQL_DB_PASSWORD: 'root'
           MYSQL_DB_PORT: ${{ job.services.mysql.ports['3306'] }}
