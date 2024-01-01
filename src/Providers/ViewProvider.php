@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 /**
@@ -37,7 +38,7 @@ class ViewProvider implements ServiceProviderInterface
             /**
              * @var DiInterface $this
              */
-            $view = new View;
+            $view = new View();
 
             /** @var Registry $registry */
             $registry = $this->getShared('registry');
@@ -52,7 +53,7 @@ class ViewProvider implements ServiceProviderInterface
                 ->setRenderLevel(View::LEVEL_AFTER_TEMPLATE);
 
             $em = $this->getShared('eventsManager');
-            $em->attach('view', new NotFoundListener);
+            $em->attach('view', new NotFoundListener());
 
             $view->setEventsManager($em);
 

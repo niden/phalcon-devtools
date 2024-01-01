@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 /**
@@ -44,10 +45,10 @@ class Serve extends Command
     public function getPossibleParams(): array
     {
         return [
-            'hostname=s'        => 'Server Hostname [default='.self::DEFAULT_HOSTNAME.']',
-            'port=s'            => 'Server Port [default='.self::DEFAULT_PORT.']',
-            'basepath=s'        => 'Project entry-point [default='.self::DEFAULT_BASE_PATH.']',
-            'rootpath=s'        => 'Document Root (public assets) [default='.self::DEFAULT_DOCUMENT_ROOT.']',
+            'hostname=s'        => 'Server Hostname [default=' . self::DEFAULT_HOSTNAME . ']',
+            'port=s'            => 'Server Port [default=' . self::DEFAULT_PORT . ']',
+            'basepath=s'        => 'Project entry-point [default=' . self::DEFAULT_BASE_PATH . ']',
+            'rootpath=s'        => 'Document Root (public assets) [default=' . self::DEFAULT_DOCUMENT_ROOT . ']',
             'config=s'          => 'Server configuration ini [optional]',
             'help'              => 'Shows this help [optional]',
         ];
@@ -161,10 +162,10 @@ class Serve extends Command
         print Color::colorize('  Launch the built-in PHP development server') . PHP_EOL . PHP_EOL;
 
         print Color::head('Usage:') . PHP_EOL;
-        print Color::colorize('  serve [hostname='.self::DEFAULT_HOSTNAME.
-                '] [port='.self::DEFAULT_PORT.
-                '] [entrypoint='.self::DEFAULT_BASE_PATH.
-                '] [document-root='.self::DEFAULT_DOCUMENT_ROOT.']', Color::FG_GREEN) . PHP_EOL . PHP_EOL;
+        print Color::colorize('  serve [hostname=' . self::DEFAULT_HOSTNAME .
+                '] [port=' . self::DEFAULT_PORT .
+                '] [entrypoint=' . self::DEFAULT_BASE_PATH .
+                '] [document-root=' . self::DEFAULT_DOCUMENT_ROOT . ']', Color::FG_GREEN) . PHP_EOL . PHP_EOL;
 
         print Color::head('Arguments:') . PHP_EOL;
         print Color::colorize('  help', Color::FG_GREEN);

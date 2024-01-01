@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 /**
@@ -41,7 +42,7 @@ class DispatcherProvider implements ServiceProviderInterface
             $dispatcher->setDefaultNamespace('Phalcon\DevTools\Web\Tools\Controllers');
 
             $eventsManager->attach('dispatch', $access, 1000);
-            $eventsManager->attach('dispatch:beforeException', new DispatchErrorHandler, 999);
+            $eventsManager->attach('dispatch:beforeException', new DispatchErrorHandler(), 999);
 
             $dispatcher->setEventsManager($eventsManager);
 

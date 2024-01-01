@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 /**
@@ -46,7 +47,7 @@ class Path
             if ('ini' === $type && file_exists($this->rootPath . $configPath . 'config.ini')) {
                 return new ConfigIni($this->rootPath . $configPath . 'config.ini');
             }
-            if (file_exists($this->rootPath . $configPath. 'config.php')) {
+            if (file_exists($this->rootPath . $configPath . 'config.php')) {
                 $config = include($this->rootPath . $configPath . 'config.php');
                 if (is_array($config)) {
                     $config = new Config($config);

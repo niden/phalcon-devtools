@@ -24,7 +24,7 @@ $I = new ConsoleTester($scenario);
 
 $I->wantToTest('Generating scaffold');
 
-$output=<<<OUT
+$output = <<<OUT
 Success: Scaffold was successfully created.
 OUT;
 

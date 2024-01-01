@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 /**
@@ -79,7 +80,7 @@ abstract class Base extends Controller
                 false
             )
             ->join(true)
-            ->addFilter(new Cssmin);
+            ->addFilter(new Cssmin());
 
         return $this;
     }
@@ -107,7 +108,7 @@ abstract class Base extends Controller
             ->addJs($this->resource->path('admin-lte/js/adminlte.min.js'), true, false)
             ->addJs($this->resource->path('js/webtools.js'), true, false)
             ->join(true)
-            ->addFilter(new Jsmin);
+            ->addFilter(new Jsmin());
 
         return $this;
     }
@@ -131,8 +132,8 @@ abstract class Base extends Controller
                 'app_name'        => 'Phalcon WebTools',
                 'app_mini'        => 'PWT',
                 'lte_name'        => 'AdminLTE',
-                'copy_date'       => '2011-'.date('Y'),
-                'lte_date'        => '2014-'.date('Y'),
+                'copy_date'       => '2011-' . date('Y'),
+                'lte_date'        => '2014-' . date('Y'),
             ]
         );
 

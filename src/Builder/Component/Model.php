@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 /**
@@ -170,7 +171,7 @@ class Model extends AbstractComponent
                 }
 
                 $entityNamespace = $this->modelOptions->hasOption('namespace')
-                    ? $this->modelOptions->getOption('namespace')."\\" : '';
+                    ? $this->modelOptions->getOption('namespace') . "\\" : '';
 
                 $refColumns = $reference->getReferencedColumns();
                 $columns = $reference->getColumns();
@@ -225,7 +226,7 @@ class Model extends AbstractComponent
                 $linesCode = file($modelPath);
                 $fullClassName = $this->modelOptions->getOption('className');
                 if ($this->modelOptions->hasOption('namespace')) {
-                    $fullClassName = $this->modelOptions->getOption('namespace').'\\'.$fullClassName;
+                    $fullClassName = $this->modelOptions->getOption('namespace') . '\\' . $fullClassName;
                 }
                 $reflection = new ReflectionClass($fullClassName);
                 foreach ($reflection->getMethods() as $method) {
@@ -299,7 +300,8 @@ class Model extends AbstractComponent
 
                 foreach ($reflection->getProperties() as $property) {
                     $propertyName = $property->getName();
-                    if (!empty($possibleFieldsTransformed[$propertyName])
+                    if (
+                        !empty($possibleFieldsTransformed[$propertyName])
                         || $property->getDeclaringClass()->getName() !== $fullClassName
                     ) {
                         continue;
@@ -454,7 +456,8 @@ class Model extends AbstractComponent
             $classDoc = $snippet->getClassDoc($this->modelOptions->getOption('className'), $namespace);
         }
 
-        if ($this->modelOptions->hasOption('mapColumn') &&
+        if (
+            $this->modelOptions->hasOption('mapColumn') &&
             $this->modelOptions->getOption('mapColumn') &&
             !$alreadyColumnMapped
         ) {

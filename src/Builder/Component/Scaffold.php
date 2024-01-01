@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 /**
@@ -140,7 +141,8 @@ class Scaffold extends AbstractComponent
         $this->options->offsetSet('fileName', Text::uncamelize($this->options->get('className')));
 
         $modelsNamespace = '';
-        if ($this->options->has('modelsNamespace') &&
+        if (
+            $this->options->has('modelsNamespace') &&
             $this->checkNamespace((string)$this->options->get('modelsNamespace'))
         ) {
             $modelsNamespace = $this->options->get('modelsNamespace');
@@ -246,11 +248,11 @@ class Scaffold extends AbstractComponent
             }
 
             if (\in_array($dataType, [Column::TYPE_DECIMAL, Column::TYPE_INTEGER])) {
-                $fieldCode = '$this->request->getPost("'.$field.'", "int")';
+                $fieldCode = '$this->request->getPost("' . $field . '", "int")';
             } elseif ($field === 'email') {
-                $fieldCode = '$this->request->getPost("'.$field.'", "email")';
+                $fieldCode = '$this->request->getPost("' . $field . '", "email")';
             } else {
-                $fieldCode = '$this->request->getPost("'.$field.'")';
+                $fieldCode = '$this->request->getPost("' . $field . '")';
             }
 
             $code .= '$' . Utils::lowerCamelizeWithDelimiter($var, '-', true) . '->';
@@ -465,7 +467,7 @@ class Scaffold extends AbstractComponent
         if (!empty(trim($controllerNamespace)) && $this->checkNamespace($controllerNamespace)) {
             $code = str_replace(
                 '$namespace$',
-                'namespace ' . $controllerNamespace.';' . PHP_EOL,
+                'namespace ' . $controllerNamespace . ';' . PHP_EOL,
                 $code
             );
             $usesNamespaces = true;
@@ -474,7 +476,8 @@ class Scaffold extends AbstractComponent
         }
 
         $modelNamespace = (string)$this->options->get('modelsNamespace');
-        if (($this->options->has('modelsNamespace') && $modelNamespace && $this->checkNamespace($modelNamespace))
+        if (
+            ($this->options->has('modelsNamespace') && $modelNamespace && $this->checkNamespace($modelNamespace))
             || $usesNamespaces
         ) {
             $code = str_replace(
@@ -562,8 +565,8 @@ class Scaffold extends AbstractComponent
             // View model layout
             $code = '';
             if ($this->options->has('theme')) {
-                $code .= '<?php $this->tag->stylesheetLink("themes/lightness/style"); ?>'.PHP_EOL;
-                $code .= '<?php $this->tag->stylesheetLink("themes/base"); ?>'.PHP_EOL;
+                $code .= '<?php $this->tag->stylesheetLink("themes/lightness/style"); ?>' . PHP_EOL;
+                $code .= '<?php $this->tag->stylesheetLink("themes/base"); ?>' . PHP_EOL;
                 $code .= '<div class="ui-layout" align="center">' . PHP_EOL;
             } else {
                 $code .= '<div class="center-block">' . PHP_EOL;
@@ -599,8 +602,8 @@ class Scaffold extends AbstractComponent
             // View model layout
             $code = '';
             if ($this->options->has('theme')) {
-                $code .= '{{ stylesheet_link("themes/lightness/style") }}'.PHP_EOL;
-                $code .= '{{ stylesheet_link("themes/base") }}'.PHP_EOL;
+                $code .= '{{ stylesheet_link("themes/lightness/style") }}' . PHP_EOL;
+                $code .= '{{ stylesheet_link("themes/base") }}' . PHP_EOL;
                 $code .= '<div class="ui-layout" align="center">' . PHP_EOL;
             } else {
                 $code .= '<div class="center-block">' . PHP_EOL;

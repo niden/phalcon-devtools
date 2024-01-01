@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 /**
@@ -104,7 +105,8 @@ class Project extends AbstractComponent
             throw new BuilderException(sprintf('Directory %s already exists.', $this->path->getRootPath()));
         }
 
-        if (!mkdir($concurrentDirectory = $this->path->getRootPath(), 0777, true)
+        if (
+            !mkdir($concurrentDirectory = $this->path->getRootPath(), 0777, true)
             && !is_dir($concurrentDirectory)
         ) {
             throw new BuilderException(sprintf('Unable create project directory %s', $this->path->getRootPath()));

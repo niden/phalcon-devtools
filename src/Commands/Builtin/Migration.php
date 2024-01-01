@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 /**
@@ -73,7 +74,7 @@ class Migration extends Command
             $config = $this->getConfig($path);
         }
 
-        $exportDataFromTables= [];
+        $exportDataFromTables = [];
         if ($this->isReceivedOption('exportDataFromTables')) {
             $exportDataFromTables = explode(',', $this->getOption('exportDataFromTables'));
         } elseif (isset($config['application']['exportDataFromTables'])) {

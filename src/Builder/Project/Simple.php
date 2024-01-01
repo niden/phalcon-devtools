@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 /**
@@ -58,7 +59,7 @@ class Simple extends ProjectBuilder
      */
     public function build()
     {
-        
+
         $this
             ->buildDirectories()
             ->getVariableValues()

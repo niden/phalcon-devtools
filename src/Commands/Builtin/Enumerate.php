@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 /**
@@ -50,7 +51,7 @@ class Enumerate extends Command
             unset($providedCommands[0]);
             if (count($providedCommands)) {
                 $spacer = str_repeat(' ', self::COMMAND_COLUMN_LEN - $commandLen);
-                print $spacer.' (alias of: ' . Color::colorize(join(', ', $providedCommands)) . ')';
+                print $spacer . ' (alias of: ' . Color::colorize(join(', ', $providedCommands)) . ')';
             }
 
             print PHP_EOL;

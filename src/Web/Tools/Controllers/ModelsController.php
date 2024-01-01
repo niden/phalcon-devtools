@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 /**
@@ -105,7 +106,7 @@ class ModelsController extends Base
         $this->tag->setDefault('path', $path);
 
         $this->view->setVars([
-            'page_subtitle'=> 'Editing Model',
+            'page_subtitle' => 'Editing Model',
             'model_path'   => $modelsDir,
             'model_name'   => $fileName,
             'custom_css'   => true,

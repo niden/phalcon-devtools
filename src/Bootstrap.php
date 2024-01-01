@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 /**
@@ -178,15 +179,15 @@ class Bootstrap
         $this->initFromConstants();
         $this->setParameters($parameters);
 
-        $this->di = new FactoryDefault;
-        $this->app = new MvcApplication;
+        $this->di = new FactoryDefault();
+        $this->app = new MvcApplication();
         $this->di->setShared('application', $this);
 
-        (new ErrorHandler)->register();
+        (new ErrorHandler())->register();
 
         foreach ($this->loaders[$this->mode] as $providerClass) {
             /** @var ServiceProviderInterface $provider */
-            $provider = new $providerClass;
+            $provider = new $providerClass();
             $provider->register($this->di);
         }
 

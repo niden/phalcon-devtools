@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 /**
@@ -43,7 +44,7 @@ class Console extends Command
      */
     public function run(array $parameters)
     {
-        $config = new Configuration;
+        $config = new Configuration();
         $shell = new Shell($config);
 
         if ($this->isReceivedOption('include')) {

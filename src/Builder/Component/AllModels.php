@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 /**
@@ -142,7 +143,7 @@ class AllModels extends AbstractComponent
                             'referencedModel' => $referencedModel,
                             'fields' => $columns[0],
                             'relationFields' => $referencedColumns[0],
-                            'options' => $defineForeignKeys ? ['foreignKey'=>true] : null
+                            'options' => $defineForeignKeys ? ['foreignKey' => true] : null
                         ];
                         $hasMany[$reference->getReferencedTable()][] = [
                             'camelizedName' => $camelCaseName,

@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 /**
@@ -108,7 +109,7 @@ class Module extends AbstractComponent
         }
 
         $modulesPath = new SplFileInfo($modulesDir);
-        $modulePath  = $modulesDir. DIRECTORY_SEPARATOR . $moduleName;
+        $modulePath  = $modulesDir . DIRECTORY_SEPARATOR . $moduleName;
 
         try {
             if ($modulesPath->isFile() && !$modulesPath->isDir()) {
@@ -192,7 +193,7 @@ class Module extends AbstractComponent
 
         if (count($this->variableValues) > 0) {
             foreach ($this->variableValues as $variableValueKey => $variableValue) {
-                $variableValueKeyRegEx = '/@@'.preg_quote($variableValueKey, '/').'@@/';
+                $variableValueKeyRegEx = '/@@' . preg_quote($variableValueKey, '/') . '@@/';
                 $str = preg_replace($variableValueKeyRegEx, $variableValue, $str);
             }
         }

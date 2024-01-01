@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 /**
@@ -48,7 +49,7 @@ class VoltProvider implements ServiceProviderInterface
             $volt = new VoltEngine($view, $di);
             $config = $this->getShared('config');
 
-            $appCacheDir = $config->get('application', new Config)->get('cacheDir');
+            $appCacheDir = $config->get('application', new Config())->get('cacheDir');
             $defaultCacheDir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'phalcon' . DIRECTORY_SEPARATOR . 'volt';
 
             /** @var Config $voltConfig */
@@ -99,7 +100,7 @@ class VoltProvider implements ServiceProviderInterface
             ];
 
             $volt->setOptions($options);
-            $volt->getCompiler()->addExtension(new PhpExt);
+            $volt->getCompiler()->addExtension(new PhpExt());
 
             return $volt;
         });

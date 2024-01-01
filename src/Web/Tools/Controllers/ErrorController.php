@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 /**
@@ -118,7 +119,7 @@ class ErrorController extends Base
             ->setTargetUri('css/webtools.css?v=' . Version::get())
             ->addCss($this->resource->path('admin-lte/css/adminlte.min.css'), true, false)
             ->join(true)
-            ->addFilter(new Cssmin);
+            ->addFilter(new Cssmin());
 
         return $this;
     }
@@ -141,7 +142,7 @@ class ErrorController extends Base
             ->addJs($this->resource->path('admin-lte/js/adminlte.min.js'), true, false)
             ->addJs($this->resource->path('js/webtools.js'), true, false)
             ->join(true)
-            ->addFilter(new Jsmin);
+            ->addFilter(new Jsmin());
 
         return $this;
     }

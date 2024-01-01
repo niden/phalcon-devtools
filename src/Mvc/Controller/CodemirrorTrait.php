@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 /**
@@ -34,7 +35,7 @@ trait CodemirrorTrait
             ->addCss($this->resource->path('codemirror/lib/codemirror.css'))
             ->addCss($this->resource->path('codemirror/lib/codephalcon.css'))
             ->join(true)
-            ->addFilter(new Cssmin);
+            ->addFilter(new Cssmin());
 
         $this->assets
             ->collection('codemirror')
@@ -50,6 +51,6 @@ trait CodemirrorTrait
             ->addJs($this->resource->path('codemirror/mode/php/php.js'))
             ->addJs($this->resource->path('codemirror/lib/codephalcon.js'))
             ->join(true)
-            ->addFilter(new Jsmin);
+            ->addFilter(new Jsmin());
     }
 }

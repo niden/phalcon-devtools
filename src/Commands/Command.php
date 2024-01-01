@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 /**
@@ -246,7 +247,8 @@ abstract class Command implements CommandsInterface
 
         for ($i = 1; $i < $numberArguments; $i++) {
             $argv = $_SERVER['argv'][$i];
-            if (is_string($argv) &&
+            if (
+                is_string($argv) &&
                 preg_match('#^([\-]{1,2})([a-zA-Z0-9][a-zA-Z0-9\-]*)(=(.*)){0,1}$#', $argv, $matches)
             ) {
                 if (strlen($matches[1]) == 1) {

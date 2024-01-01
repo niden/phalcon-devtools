@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 /**
@@ -45,7 +46,7 @@ class RegistryProvider implements ServiceProviderInterface
              * @var DiInterface $this
              */
 
-            $registry = new Registry;
+            $registry = new Registry();
 
             /* @var Config $config */
             $config = $this->getShared('config');
