@@ -18,6 +18,7 @@ use PDOException;
 use Phalcon\DevTools\Builder\Component\Scaffold;
 use Phalcon\DevTools\Builder\Exception\BuilderException;
 use Phalcon\DevTools\Mvc\Controller\Base;
+use Phalcon\DevTools\Utils;
 use Phalcon\Flash\Session;
 use Phalcon\Http\ResponseInterface;
 use Phalcon\Mvc\Dispatcher;
@@ -65,7 +66,10 @@ class ScaffoldController extends Base
                 $scaffoldBuilder->build();
 
                 $this->flashSession->success(
-                    sprintf('Scaffold for table "%s" was generated successfully', Text::camelize($tableName))
+                    sprintf(
+                        'Scaffold for table "%s" was generated successfully',
+                        Utils::camelize($tableName)
+                    )
                 );
 
                 return $this->response->redirect('/webtools.php/migrations/list');

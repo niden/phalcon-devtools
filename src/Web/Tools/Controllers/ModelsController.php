@@ -20,6 +20,7 @@ use Phalcon\DevTools\Builder\Component\Model;
 use Phalcon\DevTools\Builder\Exception\BuilderException;
 use Phalcon\DevTools\Mvc\Controller\Base;
 use Phalcon\DevTools\Mvc\Controller\CodemirrorTrait;
+use Phalcon\DevTools\Utils;
 use Phalcon\Flash\Session;
 use Phalcon\Http\ResponseInterface;
 use Phalcon\Mvc\Dispatcher;
@@ -228,7 +229,7 @@ class ModelsController extends Base
                 } else {
                     $message = sprintf(
                         'Model "%s" was created successfully',
-                        Text::camelize(basename($tableName, '.php'))
+                        Utils::camelize(basename($tableName, '.php'))
                     );
                 }
 

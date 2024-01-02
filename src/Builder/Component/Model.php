@@ -40,7 +40,6 @@ use function file_get_contents;
 use function file_put_contents;
 use function is_object;
 use function is_writable;
-use function join;
 use function method_exists;
 use function preg_match;
 use function rtrim;
@@ -200,9 +199,9 @@ class Model extends AbstractComponent
                 $initialize[] = $snippet->getRelation(
                     'hasMany',
                     $this->getFieldName($refColumns[0]),
-                    $entityNamespace . Text::camelize($tableName, '_-'),
+                    $entityNamespace . Utils::camelize($tableName, '_-'),
                     $this->getFieldName($columns[0]),
-                    "['alias' => '" . Text::camelize($tableName, '_-') . "']"
+                    "['alias' => '" . Utils::camelize($tableName, '_-') . "']"
                 );
             }
         }
@@ -218,7 +217,7 @@ class Model extends AbstractComponent
                 $this->getFieldName($columns[0]),
                 $this->getEntityClassName($reference, $entityNamespace),
                 $this->getFieldName($refColumns[0]),
-                "['alias' => '" . Text::camelize($reference->getReferencedTable(), '_-') . "']"
+                "['alias' => '" . Utils::camelize($reference->getReferencedTable(), '_-') . "']"
             );
         }
 
@@ -235,7 +234,7 @@ class Model extends AbstractComponent
                 if ($useSettersGetters) {
                     foreach ($fields as $field) {
                         /** @var Column $field */
-                        $methodName = Text::camelize($field->getName(), '_-');
+                        $methodName = Utils::camelize($field->getName(), '_-');
 
                         $possibleMethods['set' . $methodName] = true;
                         $possibleMethods['get' . $methodName] = true;
@@ -519,7 +518,12 @@ class Model extends AbstractComponent
         if ($this->isConsole()) {
             $msgSuccess = ($this->modelOptions->getOption('abstract') ? 'Abstract ' : '');
             $msgSuccess .= 'Model "%s" was successfully created.';
-            $this->notifySuccess(sprintf($msgSuccess, Text::camelize($this->modelOptions->getOption('name'), '_-')));
+            $this->notifySuccess(
+                sprintf(
+                    $msgSuccess,
+                    Utils::camelize($this->modelOptions->getOption('name'), '_-')
+                )
+            );
         }
     }
 
