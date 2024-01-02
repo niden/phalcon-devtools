@@ -39,7 +39,7 @@ class Serve extends Command
     protected string $config        = '';
     protected string $document_root = '';
     protected string $hostname      = '';
-    protected string $port          = '';
+    protected int|string $port      = '';
 
     /**
      * {@inheritdoc}
@@ -122,7 +122,7 @@ class Serve extends Command
      *
      * @return int|string
      */
-    public function getPort()
+    public function getPort(): int|string
     {
         return $this->port;
     }
