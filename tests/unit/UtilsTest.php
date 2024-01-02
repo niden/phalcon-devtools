@@ -15,61 +15,44 @@ namespace Phalcon\DevTools\Tests\Unit;
 
 use Phalcon\DevTools\Utils;
 use Phalcon\DevTools\Tests\Support\Module\UnitTest;
-use Phalcon\Text;
 
 final class UtilsTest extends UnitTest
 {
     /**
      * Tests Utils::camelize
      *
-     * @test
+     * @dataProvider providerCamelizeString
+     *
      * @issue  1056
      * @author Sergii Svyrydenko <sergey.v.sviridenko@gmail.com>
      * @since  2017-08-02
      */
-    public function shouldCamelizeString()
-    {
-        $this->specify(
-            "Method Utils::camelize hasn't returned proper string",
-            function ($string, $expected) {
-                expect($string)->equals($expected);
-            },
-            [
-                'examples' => [
-                    [Utils::camelize('MyFooBar'), 'MyFooBar'],
-                    [Utils::camelize('MyFooBar', '_-'), 'MyFooBar'],
-                    [Utils::camelize('My-Foo_Bar', '-'), 'MyFoo_Bar'],
-                    [Utils::camelize('My-Foo_Bar', '_-'), 'MyFooBar']
-                ]
-            ]
-        );
+    public function testCamelizeString(
+        string $source,
+        string $delimiter,
+        string $expected
+    ): void {
+        $actual = Utils::camelize($source, $delimiter);
+        $this->assertSame($actual, $expected);
     }
 
     /**
      * Tests Utils::lowerCamelizeWithDelimiter
      *
-     * @test
+     * @dataProvider providerCamelizeStringWithDelimiter
+     *
      * @issue  1070
      * @author Sergii Svyrydenko <sergey.v.sviridenko@gmail.com>
      * @since  2017-08-07
      */
-    public function shouldCamelizeStringWithDelimiter()
-    {
-        $this->specify(
-            "Method Utils::lowerCamelizeWithDelimiter hasn't returned proper string",
-            function ($string, $expected) {
-                expect($string)->equals($expected);
-            },
-            [
-                'examples' => [
-                    [Utils::lowerCamelizeWithDelimiter('myfoobar'), 'myfoobar'],
-                    [Utils::lowerCamelizeWithDelimiter('myfoobar', '_-'), 'Myfoobar'],
-                    [Utils::lowerCamelizeWithDelimiter('My-Foo_Bar', '_-'), 'MyFooBar'],
-                    [Utils::lowerCamelizeWithDelimiter('my-foo_bar', '_-'), 'MyFooBar'],
-                    [Utils::lowerCamelizeWithDelimiter('my-foo_bar', '_-', true), 'myFooBar']
-                ]
-            ]
-        );
+    public function shouldCamelizeStringWithDelimiter(
+        string $source,
+        string $delimiter,
+        bool $useLower,
+        string $expected
+    ): void {
+        $actual = Utils::lowerCamelizeWithDelimiter($source, $delimiter, $useLower);
+        $this->assertSame($actual, $expected);
     }
 
     /**
@@ -81,40 +64,36 @@ final class UtilsTest extends UnitTest
      */
     public function shouldLowercamelizeString()
     {
-        $this->specify(
-            "Method Utils::lowerCamelize hasn't returned proper string",
-            function ($string, $expected) {
-                expect($string)->equals($expected);
-            },
-            [
-                'examples' => [
-                    [Utils::lowerCamelize('MyFooBar'), 'myFooBar']
-                ]
-            ]
-        );
+        $source = 'MyFooBar';
+        $expected = 'myFooBar';
+        $actual = Utils::lowerCamelize($source);
+        $this->assertSame($actual, $expected);
     }
 
     /**
-     * Tests Text::uncamelize
-     *
-     * @test
-     * @author Sergii Svyrydenko <sergey.v.sviridenko@gmail.com>
-     * @since  2017-08-02
+     * @return array[]
      */
-    public function shouldUncamelizeString()
+    public function providerCamelizeString(): array
     {
-        $this->specify(
-            "Method Text::uncamelize hasn't returned proper string",
-            function ($string, $expected) {
-                expect($string)->equals($expected);
-            },
-            [
-                'examples' => [
-                    [Text::uncamelize('MyFooBar'), 'my_foo_bar'],
-                    [Text::uncamelize('MyFooBar', '-'), 'my-foo-bar'],
-                    [Text::uncamelize('MyFooBar', '_'), 'my_foo_bar']
-                ]
-            ]
-        );
+        return [
+            ['MyFooBar', '_', 'MyFooBar'],
+            ['MyFooBar', '_-', 'MyFooBar'],
+            ['My-Foo_Bar', '-', 'MyFoo_Bar'],
+            ['My-Foo_Bar', '_-', 'MyFooBar'],
+        ];
+    }
+
+    /**
+     * @return array[]
+     */
+    public function providerCamelizeStringWithDelimiter(): array
+    {
+        return [
+            ['myfoobar', '_', false, 'myfoobar'],
+            ['myfoobar', '_-', false, 'Myfoobar'],
+            ['My-Foo_Bar', '_-', false, 'MyFooBar'],
+            ['my-foo_bar', '_-', false, 'MyFooBar'],
+            ['my-foo_bar', '_-', true, 'myFooBar'],
+        ];
     }
 }

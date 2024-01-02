@@ -112,7 +112,7 @@ jobs:
           php content_config.php
           php tests/debug.php
 
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v3
         if: failure()
         with:
           name: Codeception Logs

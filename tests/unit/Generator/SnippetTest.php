@@ -43,11 +43,11 @@ EOD;
         $classString = $this->snippet->getClass(
             'namespace Test\DevTools;' . PHP_EOL . PHP_EOL,
             '',
-            '',
-            '',
             $options,
+            '',
+            '',
+            '',
             'BaseClass',
-            ''
         );
 
         $this->assertSame($expected, $classString);
